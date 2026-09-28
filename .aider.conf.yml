@@ -1,0 +1,6 @@
+# Aider has no AGENTS.md support and no hooks. `read:` loads shared files read-only (prompt-cached);
+# `file:` keeps the status file editable; auto-test after each edit is Aider's only enforcement.
+read: [AGENTS.md, docs/agent/LEARNINGS.md]
+file: [docs/agent/STATUS.md]
+test-cmd: ./ops/verify.sh
+auto-test: true

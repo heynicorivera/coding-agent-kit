@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [ { "command": "./ops/agent/session-start.sh --format cursor", "timeout": 10 } ],
+    "stop": [ { "command": "python3 ./ops/agent/stop_gate.py --consumer cursor", "timeout": 330, "loop_limit": 3 } ]
+  }
+}

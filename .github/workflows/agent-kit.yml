@@ -1,0 +1,25 @@
+name: agent-kit
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Kit check with push-range rules
+        env:
+          AGENT_KIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: ./ops/check-agent-kit.sh --range "${AGENT_KIT_BASE}..HEAD"
+      - name: Kit self-test
+        run: ./ops/test-kit.sh
+      - name: Verify (tests, lint, kit check)
+        run: ./ops/verify.sh

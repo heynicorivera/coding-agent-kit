@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(ops/verify.sh)",
+      "Edit(ops/check-agent-kit.sh)",
+      "Edit(ops/agent/**)",
+      "Edit(.claude/settings.json)",
+      "Edit(.codex/**)",
+      "Edit(.cursor/hooks.json)",
+      "Edit(.github/hooks/**)",
+      "Edit(.github/workflows/**)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/ops/agent/session-start.sh", "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)\"/ops/agent/stop_gate.py --consumer claude", "timeout": 330 }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/ops/agent/session-end.sh", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      { "type": "command", "bash": "python3 ops/agent/stop_gate.py --consumer copilot", "cwd": ".", "timeoutSec": 330 }
+    ]
+  }
+}

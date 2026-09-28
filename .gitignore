@@ -1,0 +1,16 @@
+# Personal agent files, never shared
+CLAUDE.local.md
+.claude/settings.local.json
+
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python bytecode (the gate is a Python script)
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store

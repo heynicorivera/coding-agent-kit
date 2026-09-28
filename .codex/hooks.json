@@ -1,0 +1,14 @@
+{
+  "description": "Agent kit: inject STATUS.md and active learnings at session start (also after compaction), gate the end of a turn on ./ops/verify.sh, flag sessions that end without a wrap-up. Review, then trust when Codex asks.",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/ops/agent/session-start.sh", "timeout": 10 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)\"/ops/agent/stop_gate.py --consumer codex", "timeout": 330 } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/ops/agent/session-end.sh", "timeout": 3 } ] }
+    ]
+  }
+}
