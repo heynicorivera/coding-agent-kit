@@ -9,7 +9,7 @@ set -euo pipefail
 kit="$(cd "$(dirname "$0")/.." && pwd)"
 work="$(mktemp -d "${TMPDIR:-/tmp}/agent-kit-test.XXXXXX")"
 export XDG_CACHE_HOME="$work/cache"
-trap 'rm -r -- "$work"' EXIT
+trap 'chmod -R u+w "$work" && rm -r -- "$work"' EXIT  # git objects are read-only; rm would ask
 passed=0; failed=0
 ok()  { passed=$((passed + 1)); echo "ok   $1"; }
 bad() { failed=$((failed + 1)); echo "FAIL $1"; }

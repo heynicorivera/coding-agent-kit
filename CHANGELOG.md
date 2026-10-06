@@ -14,6 +14,8 @@ Notable changes to the kit, newest first. Versions are git tags (`v2.0.0`); date
 - CI failed on the first push of a branch: GitHub sends an all-zero `before` commit and
   `ops/check-agent-kit.sh --range` aborted with exit 128. It now prints a note and skips the
   range rules; the pull-request run still applies them.
+- `ops/test-kit.sh` asked to confirm deleting each read-only git object when run from a
+  terminal; its cleanup now makes them writable first.
 - README-only edits no longer run `ops/verify.sh`: the gate and the CI freshness rule read one list,
   `ops/agent/non-code-paths.txt`.
 

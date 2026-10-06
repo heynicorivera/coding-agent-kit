@@ -2,13 +2,13 @@
 <!-- Injected at session start by the kit hooks. Rewritten, never appended, whenever code changes.
      Under 60 lines. Every claim names its evidence. No secrets, no personal data. -->
 
-updated: 2026-10-06 · commit: uncommitted on branch harden-gate, based on a0e820f (the maintainer commits)
-verification: verified — command: `./ops/verify.sh` — at: 2026-10-06, uncommitted tree on a0e820f (kit check OK, `./ops/test-kit.sh` 92/92)
+updated: 2026-10-06 · commit: branch harden-gate, 3 commits on a0e820f, not pushed (the maintainer commits)
+verification: verified — command: `./ops/verify.sh` — at: 2026-10-06, b4a5765 plus the cleanup fix (kit check OK, `./ops/test-kit.sh` 92/92, also from a terminal)
 
 ## Now
 - In progress: nothing; v2.0 (audit of 2026-10-06, phases 1–3 and 4.1–4.2) awaits review
-- Uncommitted: branch harden-gate in the worktree /tmp/coding-agent-kit-harden-gate; phases 1–2
-  are staged, phase 3 and the release files are not (two commits)
+- Branch harden-gate in the worktree /tmp/coding-agent-kit-harden-gate: phases 1–2, phase 3 with
+  the release, and a third commit that stops `./ops/test-kit.sh` prompting on cleanup in a terminal
 
 ## Last session
 - 2026-10-06, phase 1: the stop gate measures from a session base, so commits count (B1); a gate
@@ -26,9 +26,9 @@ verification: verified — command: `./ops/verify.sh` — at: 2026-10-06, uncomm
   and `changes.py` each fail a case; the suite passes under Python 3.8
 
 ## Next
-1. Maintainer: review; commit the staged phases 1–2, then the rest; push harden-gate; open a PR;
-   merge when CI is green; tag the merge `v2.0.0`; run `git config core.hooksPath .githooks` in
-   the main checkout; remove the worktree; start a new agent session
+1. Maintainer: push harden-gate; open a PR; merge when CI is green; tag the merge `v2.0.0`;
+   run `git config core.hooksPath .githooks` in the main checkout; remove the worktree; start a
+   new agent session
 2. Onboard one existing repository with `docs/agent/ONBOARD.md`; record what it missed
 3. Later (ROADMAP.md): open-source model gate, Windows, promoting `contrib/untested/` configs
 
