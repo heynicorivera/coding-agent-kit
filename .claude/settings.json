@@ -8,7 +8,20 @@
       "Edit(.codex/**)",
       "Edit(.cursor/hooks.json)",
       "Edit(.github/hooks/**)",
-      "Edit(.github/workflows/**)"
+      "Edit(.github/workflows/**)",
+      "Edit(.githooks/**)",
+      "Edit(~/.cache/agent-kit/**)",
+      "Bash(git commit *--no-verify*)",
+      "Bash(git commit -n *)",
+      "Bash(git config *core.hooksPath*)",
+      "Bash(git -c *core.hooksPath*)",
+      "Bash(rm *ops/*)",
+      "Bash(mv *ops/*)",
+      "Bash(chmod *ops/*)",
+      "Bash(git rm *ops/*)",
+      "Bash(git mv *ops/*)",
+      "Bash(rm *.githooks*)",
+      "Bash(chmod *.githooks*)"
     ]
   },
   "hooks": {

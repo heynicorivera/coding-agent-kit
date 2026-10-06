@@ -88,3 +88,37 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   matches the internal identifier `agent-kit` used by the check, the workflow and the hooks. Rejected:
   `ai-native-coding-template` (says nothing about the function), `agent-starter-kit` (100+ collisions,
   reads as a kit for building agents), `multi-agent-starter-kit` (multi-agent orchestration is a non-goal).
+- 2026-10-06: The stop gate measures changes from a session base: the HEAD that session-start records
+  (kept across compaction), else the merge-base with the upstream branch, else HEAD. Why: committing
+  before stopping skipped `ops/verify.sh` (audit of 2026-10-06, probe B1). Rejected: one base file
+  per session id (no id shared by every tool; parallel agents already get separate worktrees and keys).
+- 2026-10-06: A gate file changed, deleted or made non-executable since the session base blocks like a
+  failing verify, and "unconfigured" is read from the base. Why: probes B2–B4 ended turns with failing
+  tests; the Claude deny list covers its edit tools only. Rejected: an escape variable for kit work (an
+  agent can set environment through `.claude/settings.local.json`). Cost: a requested gate change blocks
+  until a human commits it and starts a new session; the 3-strike breaker bounds it.
+- 2026-10-06: Added `.githooks/pre-commit` (runs `ops/verify.sh`), enabled per clone with
+  `git config core.hooksPath .githooks`; the check prints a TODO locally until it is set. Why: Zed,
+  Gemini CLI, Antigravity and Devin have no stop hook, and a commit is the one point every tool passes.
+  Rejected: checking only the staged snapshot (stash juggling is fragile); a hook framework (dependency).
+- 2026-10-06: Claude deny list extended with Bash patterns (`--no-verify`, `core.hooksPath`, `rm`/`mv`/
+  `chmod` on `ops/`) and `.githooks/**`. Why: cheap first line; code.claude.com permissions says a Bash
+  rule "isn't a security boundary", so the gate-file check above is the real fix.
+- 2026-10-06: One list of non-code paths, `ops/agent/non-code-paths.txt`, read by the gate and the check.
+  Why: the gate excluded only `docs/agent/` while CI also excluded README, PRD and research, so
+  README-only edits ran the full verify.
+- 2026-10-06: `session-end.sh` replaces its earlier stamp instead of appending. Why: a committed stamp
+  plus another unclean exit added a second one, and enough of them break the 60-line cap.
+- 2026-10-06: Intent layer: one change file per T1/T2 change in `docs/agent/changes/` (Intent, Tier,
+  Acceptance with a `test:` path per line, Tasks, Out of scope, Evidence; Design for T2). AGENTS.md
+  rules 2 and 3 merged so the tier rule fits in 7. The gate nudges once per change set, on a claim,
+  when more than 3 code files or 50 lines changed without a change file, or a touched one is still
+  open; the check refuses a closed change without existing tests, ticked tasks and
+  `verification: verified`. Why: passing tests prove nothing about building the wrong thing. Borrowed:
+  OpenSpec change files, BMAD tiering after investigation, Spec Kit acceptance scenarios. Rejected:
+  personas, multi-file feature folders, a framework CLI; spec deltas wait for living specs (phase 3).
+- 2026-10-06: `AGENT_KIT_NUDGES=0` replaces `AGENT_KIT_STATUS_GATE=0` and turns off both nudges, which
+  now share one block per change set. Why: two nudges, one switch; no adopters yet to migrate.
+- 2026-10-06: Kit changes that touch gate files are built on a branch in a separate worktree and merged
+  by the maintainer. Why: the deny rules stop the agent from editing gate files in the main checkout,
+  and the new gate would block its own development there.

@@ -1,0 +1,8 @@
+# Paths that are not code: changing them never makes the stop gate run ops/verify.sh, never counts
+# toward the change-file nudge and never trips the STATUS.md freshness rule in CI.
+# One path per line, relative to the repository root; a directory covers everything under it.
+# Read by ops/agent/stop_gate.py and ops/check-agent-kit.sh.
+docs/agent
+README.md
+PRD.md
+research

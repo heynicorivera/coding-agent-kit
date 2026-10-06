@@ -102,6 +102,83 @@ check_verify_script() {
   return 0
 }
 
+check_gate_files() {
+  [ -f ops/agent/non-code-paths.txt ] \
+    || problem "ops/agent/non-code-paths.txt is missing; the stop gate would treat every path as code. Restore it from the starter kit."
+  if [ -e .githooks/pre-commit ] && [ ! -x .githooks/pre-commit ]; then
+    problem ".githooks/pre-commit is not executable, so git skips it. Run: chmod +x .githooks/pre-commit"
+  fi
+  return 0
+}
+
+check_change_files() {
+  [ -d docs/agent/changes ] || return 0
+  [ -f docs/agent/changes/_template.md ] \
+    || problem "docs/agent/changes/_template.md is missing. Restore it from the starter kit."
+  python3 - <<'PY' || fail=1
+import pathlib, re, sys
+
+HEADINGS = ("Intent", "Tier", "Acceptance", "Tasks", "Out of scope", "Evidence")
+TEST_REF = re.compile(r"test: `([^`]+)`")
+
+
+def sections(text):
+    parts, name = {}, None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            name = line[3:].strip()
+            parts[name] = []
+        elif name:
+            parts[name].append(line)
+    return parts
+
+
+def closed_problems(path, parts, criteria):
+    found = []
+    for line in criteria:
+        for ref in TEST_REF.findall(line):
+            if not pathlib.Path(ref.split("::")[0]).exists():
+                found.append(f"{path} is closed but its test {ref} does not exist.")
+    if any(line.lstrip().startswith("- [ ]") for line in parts["Tasks"]):
+        found.append(f"{path} is closed with unchecked tasks; tick them or reopen the change.")
+    evidence = "\n".join(parts["Evidence"])
+    if not re.search(r"^- verification: verified\b", evidence, re.M):
+        found.append(f"{path} is closed without a '- verification: verified ...' line under Evidence.")
+    if re.search(r"<[^<>]*>", evidence):
+        found.append(f"{path} is closed with <placeholders> left under Evidence.")
+    return found
+
+
+def problems_in(path):
+    text = re.sub(r"<!--.*?-->", "", path.read_text(errors="replace"), flags=re.S)
+    parts = sections(text)
+    missing = ["## " + h for h in HEADINGS if h not in parts]
+    if missing:
+        return [f"{path} lacks {', '.join(missing)}; "
+                "copy the headings from docs/agent/changes/_template.md."]
+    status = re.search(r"^status: (open|closed)\s*$", text, re.M)
+    if not status:
+        return [f"{path} needs a line 'status: open' or 'status: closed'."]
+    criteria = [line for line in parts["Acceptance"] if line.startswith("- ")]
+    found = [] if criteria else [f"{path} has no acceptance criteria under ## Acceptance."]
+    found += [f"{path}: acceptance line names no test: `path`: {line}"
+              for line in criteria if not TEST_REF.search(line)]
+    if status.group(1) == "closed":
+        found += closed_problems(path, parts, criteria)
+    return found
+
+
+problems = []
+for change in sorted(pathlib.Path("docs/agent/changes").glob("*.md")):
+    if change.name != "_template.md":
+        problems += problems_in(change)
+for problem in problems:
+    print("FAIL: " + problem)
+sys.exit(1 if problems else 0)
+PY
+  return 0
+}
+
 check_stale_references() {
   local f ref
   for f in AGENTS.md docs/agent/STATUS.md docs/agent/LEARNINGS.md; do
@@ -137,11 +214,18 @@ check_decisions_append_only() {
   return 0
 }
 
+non_code_pathspecs() {  # one ':!<path>' per entry of the list the stop gate also reads
+  [ -f ops/agent/non-code-paths.txt ] || return 0
+  awk '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, "") } $0 != "" && $0 !~ /^#/ { print ":!" $0 }' \
+    ops/agent/non-code-paths.txt
+}
+
 check_status_freshness() {
   [ -n "$range" ] || return 0
-  local base="${range%%..*}" code_changed status_changed real_commits
+  local base="${range%%..*}" code_changed status_changed real_commits spec excludes=()
   git rev-parse --verify -q "$base" >/dev/null 2>&1 || return 0
-  code_changed=$(git diff --name-only "$range" -- . ':!docs/agent' ':!README.md' ':!PRD.md' ':!research' | wc -l | tr -d ' ')
+  while IFS= read -r spec; do excludes+=("$spec"); done < <(non_code_pathspecs)
+  code_changed=$(git diff --name-only "$range" -- . ${excludes[@]+"${excludes[@]}"} | wc -l | tr -d ' ')
   status_changed=$(git diff --name-only "$range" -- docs/agent/STATUS.md | wc -l | tr -d ' ')
   real_commits=$(git log --format=%s "$range" | grep -vc '^wip:' || true)
   if [ "$code_changed" -gt 0 ] && [ "$status_changed" -eq 0 ] && [ "$real_commits" -gt 0 ]; then
@@ -157,11 +241,15 @@ report_todos() {
   [ "$n" -gt 0 ] && echo "TODO: AGENTS.md has $n placeholder(s) in <angle brackets> left to fill."
   [ -f ops/verify.sh ] && grep -q 'KIT-PLACEHOLDER' ops/verify.sh \
     && echo "TODO: ops/verify.sh is not configured (replace the KIT-PLACEHOLDER block)."
+  if [ -z "${CI:-}" ] && [ -x .githooks/pre-commit ] && [ "$(git config core.hooksPath || true)" != .githooks ]; then
+    echo "TODO: commits do not run ops/verify.sh yet; enable the pre-commit gate: git config core.hooksPath .githooks"
+  fi
   return 0
 }
 
 check_python; check_agents_md; check_memory_files; check_pointer_files; check_hooks; check_verify_script
-check_stale_references; check_credentials; check_decisions_append_only; check_status_freshness
+check_gate_files; check_change_files; check_stale_references; check_credentials
+check_decisions_append_only; check_status_freshness
 report_todos
 [ "$fail" -eq 0 ] && echo "OK: agent kit checks passed"
 exit "$fail"
