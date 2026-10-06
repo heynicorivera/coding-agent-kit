@@ -88,3 +88,64 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   matches the internal identifier `agent-kit` used by the check, the workflow and the hooks. Rejected:
   `ai-native-coding-template` (says nothing about the function), `agent-starter-kit` (100+ collisions,
   reads as a kit for building agents), `multi-agent-starter-kit` (multi-agent orchestration is a non-goal).
+- 2026-10-06: The stop gate measures changes from a session base: the HEAD that session-start records
+  (kept across compaction), else the merge-base with the upstream branch, else HEAD. Why: committing
+  before stopping skipped `ops/verify.sh` (audit of 2026-10-06, probe B1). Rejected: one base file
+  per session id (no id shared by every tool; parallel agents already get separate worktrees and keys).
+- 2026-10-06: A gate file changed, deleted or made non-executable since the session base blocks like a
+  failing verify, and "unconfigured" is read from the base. Why: probes B2–B4 ended turns with failing
+  tests; the Claude deny list covers its edit tools only. Rejected: an escape variable for kit work (an
+  agent can set environment through `.claude/settings.local.json`). Cost: a requested gate change blocks
+  until a human commits it and starts a new session; the 3-strike breaker bounds it.
+- 2026-10-06: Added `.githooks/pre-commit` (runs `ops/verify.sh`), enabled per clone with
+  `git config core.hooksPath .githooks`; the check prints a TODO locally until it is set. Why: Zed,
+  Gemini CLI, Antigravity and Devin have no stop hook, and a commit is the one point every tool passes.
+  Rejected: checking only the staged snapshot (stash juggling is fragile); a hook framework (dependency).
+- 2026-10-06: Claude deny list extended with Bash patterns (`--no-verify`, `core.hooksPath`, `rm`/`mv`/
+  `chmod` on `ops/`) and `.githooks/**`. Why: cheap first line; code.claude.com permissions says a Bash
+  rule "isn't a security boundary", so the gate-file check above is the real fix.
+- 2026-10-06: One list of non-code paths, `ops/agent/non-code-paths.txt`, read by the gate and the check.
+  Why: the gate excluded only `docs/agent/` while CI also excluded README, PRD and research, so
+  README-only edits ran the full verify.
+- 2026-10-06: `session-end.sh` replaces its earlier stamp instead of appending. Why: a committed stamp
+  plus another unclean exit added a second one, and enough of them break the 60-line cap.
+- 2026-10-06: Intent layer: one change file per T1/T2 change in `docs/agent/changes/` (Intent, Tier,
+  Acceptance with a `test:` path per line, Tasks, Out of scope, Evidence; Design for T2). AGENTS.md
+  rules 2 and 3 merged so the tier rule fits in 7. The gate nudges once per change set, on a claim,
+  when more than 3 code files or 50 lines changed without a change file, or a touched one is still
+  open; the check refuses a closed change without existing tests, ticked tasks and
+  `verification: verified`. Why: passing tests prove nothing about building the wrong thing. Borrowed:
+  OpenSpec change files, BMAD tiering after investigation, Spec Kit acceptance scenarios. Rejected:
+  personas, multi-file feature folders, a framework CLI; spec deltas wait for living specs (phase 3).
+- 2026-10-06: `AGENT_KIT_NUDGES=0` replaces `AGENT_KIT_STATUS_GATE=0` and turns off both nudges, which
+  now share one block per change set. Why: two nudges, one switch; no adopters yet to migrate.
+- 2026-10-06: Kit changes that touch gate files are built on a branch in a separate worktree and merged
+  by the maintainer. Why: the deny rules stop the agent from editing gate files in the main checkout,
+  and the new gate would block its own development there.
+- 2026-10-06: This release is v2.0, tagged `v2.0.0`, with CHANGELOG.md and ROADMAP.md. Why: the
+  maintainer's call; the gate semantics and the `AGENT_KIT_NUDGES` rename break compatibility.
+- 2026-10-06: Untested configs (Codex, Cursor, Copilot cloud agent, Gemini CLI, Aider) moved to
+  `contrib/untested/`; the check still validates them once copied to the root, and the self-test
+  copies them there. Why: the maintainer uses Claude Code and Zed daily; untested configs are upkeep
+  without evidence (audit 3.4). Rejected: deleting them (they are cheap to keep and to promote).
+- 2026-10-06: A gate for an open-source model moved to ROADMAP.md. Why: no local model is in daily
+  use, so there is no harness to wire (audit 3.5).
+- 2026-10-06: Living specs in `docs/agent/specs/`, changed only through a T2 Spec delta;
+  `ops/agent/changes.py` holds the change-file rules (`check`) and the merge-and-move step
+  (`archive`), so the check and the archive share one definition, and it sits under `ops/agent/` so
+  the agent cannot weaken it. A closed change fails the check until archived. Why: specs must stay in
+  step with code in brownfield repositories (audit 3.1); a deterministic merge beats an agent
+  editing specs by hand. Rejected: an OpenSpec-style CLI dependency; spec deltas for T1.
+- 2026-10-06: The spec-vs-diff check (audit 3.3) prints advisory `GAP:` lines for open changes only:
+  acceptance tests that do not exist yet or are unchanged since the base. Why: the plan makes it
+  advisory; `ops/verify.sh` stays the hard gate.
+- 2026-10-06: Bug-fix rule: a `T1 fix` change cannot be archived without a `failed first:` Evidence
+  line. Why: Spec Kit's rule that missing verification is not a fix (audit 4.1); it fits inside
+  rule 3, so the rule count stays 7.
+- 2026-10-06: Onboarding an existing repository (`docs/agent/ONBOARD.md`) is validated on a real
+  repository after the v2.0 commit is on GitHub. Why: the maintainer's sequencing.
+- 2026-10-06: When the `--range` base is not a commit (GitHub's all-zero `before` on a branch's first
+  push), the check prints a note and skips the range rules instead of aborting. Why: the v1.0 push to
+  `main` failed CI this way (run 36441532465), and every adopter's first push would too; the
+  pull-request run still applies the range rules. Rejected: changing the workflow's base expression
+  (the check is what crashed, and local `--range` use hits the same case).

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Prints docs/agent/STATUS.md and the active learnings so a session-start hook can put them into
-# the agent's context. Claude Code and Codex take plain stdout; Cursor takes JSON (--format cursor).
+# Records the session base for the stop gate (from the hook payload on stdin), then prints
+# docs/agent/STATUS.md and the active learnings so a session-start hook can put them into the
+# agent's context. Claude Code and Codex take plain stdout; Cursor takes JSON (--format cursor).
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+python3 ops/agent/stop_gate.py --save-base \
+  || echo "session-start: could not record the session base; the stop gate falls back to the upstream branch." >&2
 format=plain
 [ "${1:-}" = "--format" ] && format="${2:-plain}"
 status="docs/agent/STATUS.md"

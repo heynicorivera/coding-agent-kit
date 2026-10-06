@@ -7,6 +7,10 @@ fail=0
 problem() { echo "FAIL: $*"; fail=1; }
 range="${AGENT_KIT_RANGE:-}"
 [ "${1:-}" = "--range" ] && range="${2:-}"
+if [ -n "$range" ] && ! git rev-parse --verify -q "${range%%..*}^{commit}" >/dev/null 2>&1; then
+  echo "NOTE: ${range%%..*} is not a commit here (the first push of a branch?); range rules skipped."
+  range=""
+fi
 
 template_state() { [ -f AGENTS.md ] && grep -q '<one sentence: what this software does and for whom>' AGENTS.md; }
 
@@ -102,6 +106,25 @@ check_verify_script() {
   return 0
 }
 
+check_gate_files() {
+  [ -f ops/agent/non-code-paths.txt ] \
+    || problem "ops/agent/non-code-paths.txt is missing; the stop gate would treat every path as code. Restore it from the starter kit."
+  if [ -e .githooks/pre-commit ] && [ ! -x .githooks/pre-commit ]; then
+    problem ".githooks/pre-commit is not executable, so git skips it. Run: chmod +x .githooks/pre-commit"
+  fi
+  return 0
+}
+
+check_change_files() {  # change files and living specs; ops/agent/changes.py holds the rules
+  local f base="${range%%..*}"
+  for f in docs/agent/changes/_template.md docs/agent/specs/_template.md; do
+    [ -f "$f" ] || problem "$f is missing. Restore it from the starter kit."
+  done
+  [ -n "$range" ] || base="$(git merge-base HEAD '@{upstream}' 2>/dev/null || git rev-parse --verify -q HEAD || true)"
+  python3 ops/agent/changes.py check "$base" || fail=1
+  return 0
+}
+
 check_stale_references() {
   local f ref
   for f in AGENTS.md docs/agent/STATUS.md docs/agent/LEARNINGS.md; do
@@ -137,11 +160,18 @@ check_decisions_append_only() {
   return 0
 }
 
+non_code_pathspecs() {  # one ':!<path>' per entry of the list the stop gate also reads
+  [ -f ops/agent/non-code-paths.txt ] || return 0
+  awk '{ sub(/^[ \t\r]+/, ""); sub(/[ \t\r]+$/, "") } $0 != "" && $0 !~ /^#/ { print ":!" $0 }' \
+    ops/agent/non-code-paths.txt
+}
+
 check_status_freshness() {
   [ -n "$range" ] || return 0
-  local base="${range%%..*}" code_changed status_changed real_commits
+  local base="${range%%..*}" code_changed status_changed real_commits spec excludes=()
   git rev-parse --verify -q "$base" >/dev/null 2>&1 || return 0
-  code_changed=$(git diff --name-only "$range" -- . ':!docs/agent' ':!README.md' ':!PRD.md' ':!research' | wc -l | tr -d ' ')
+  while IFS= read -r spec; do excludes+=("$spec"); done < <(non_code_pathspecs)
+  code_changed=$(git diff --name-only "$range" -- . ${excludes[@]+"${excludes[@]}"} | wc -l | tr -d ' ')
   status_changed=$(git diff --name-only "$range" -- docs/agent/STATUS.md | wc -l | tr -d ' ')
   real_commits=$(git log --format=%s "$range" | grep -vc '^wip:' || true)
   if [ "$code_changed" -gt 0 ] && [ "$status_changed" -eq 0 ] && [ "$real_commits" -gt 0 ]; then
@@ -157,11 +187,15 @@ report_todos() {
   [ "$n" -gt 0 ] && echo "TODO: AGENTS.md has $n placeholder(s) in <angle brackets> left to fill."
   [ -f ops/verify.sh ] && grep -q 'KIT-PLACEHOLDER' ops/verify.sh \
     && echo "TODO: ops/verify.sh is not configured (replace the KIT-PLACEHOLDER block)."
+  if [ -z "${CI:-}" ] && [ -x .githooks/pre-commit ] && [ "$(git config core.hooksPath || true)" != .githooks ]; then
+    echo "TODO: commits do not run ops/verify.sh yet; enable the pre-commit gate: git config core.hooksPath .githooks"
+  fi
   return 0
 }
 
 check_python; check_agents_md; check_memory_files; check_pointer_files; check_hooks; check_verify_script
-check_stale_references; check_credentials; check_decisions_append_only; check_status_freshness
+check_gate_files; check_change_files; check_stale_references; check_credentials
+check_decisions_append_only; check_status_freshness
 report_todos
 [ "$fail" -eq 0 ] && echo "OK: agent kit checks passed"
 exit "$fail"
