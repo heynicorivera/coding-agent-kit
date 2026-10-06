@@ -1,8 +1,9 @@
 # AGENTS.md
 
-Single source of truth for every coding agent in this repository. `CLAUDE.md`, `.gemini/settings.json`
-and `.aider.conf.yml` only point here. What must always hold is enforced by hooks, `ops/verify.sh` and
-`ops/check-agent-kit.sh`; this file holds only what an agent cannot infer from the code. Max 7 rules.
+Single source of truth for every coding agent in this repository. `CLAUDE.md` and the opt-in
+pointer files in `contrib/untested/` only point here. What must always hold is enforced by hooks,
+`ops/verify.sh` and `ops/check-agent-kit.sh`; this file holds only what an agent cannot infer from
+the code. Max 7 rules.
 
 ## Project
 - Purpose: <one sentence: what this software does and for whom>
@@ -19,8 +20,9 @@ and `.aider.conf.yml` only point here. What must always hold is enforced by hook
 2. Read `docs/agent/STATUS.md` first if it is not already in your context, then run
    `./ops/verify.sh` before new work; a failure inherited from the last session comes first.
 3. Classify each change after reading the code. T0 (trivial, under ~20 lines): verify only.
-   T1 (feature or bug fix): a change file from `docs/agent/changes/_template.md` before code.
-   T2 (schema, auth, payments, cross-module): T1 plus its Design section. Unsure: the higher tier.
+   T1 (feature or bug fix): a change file from `docs/agent/changes/_template.md` before code; a fix
+   needs a test that failed before it. T2 (schema, auth, payments, cross-module): T1 plus Design and
+   Spec delta. Unsure: the higher tier. Done: close it, run `./ops/agent/changes.py` archive.
 4. When code changed, rewrite `docs/agent/STATUS.md` before presenting: what changed, `verification:`
    (verified | partial | failed) with the command and commit, what is next. Under 60 lines.
 5. Append chosen-between alternatives to `docs/agent/DECISIONS.md`; propose repeated lessons in

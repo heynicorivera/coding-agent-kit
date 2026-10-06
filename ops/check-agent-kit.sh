@@ -7,6 +7,10 @@ fail=0
 problem() { echo "FAIL: $*"; fail=1; }
 range="${AGENT_KIT_RANGE:-}"
 [ "${1:-}" = "--range" ] && range="${2:-}"
+if [ -n "$range" ] && ! git rev-parse --verify -q "${range%%..*}^{commit}" >/dev/null 2>&1; then
+  echo "NOTE: ${range%%..*} is not a commit here (the first push of a branch?); range rules skipped."
+  range=""
+fi
 
 template_state() { [ -f AGENTS.md ] && grep -q '<one sentence: what this software does and for whom>' AGENTS.md; }
 
@@ -111,71 +115,13 @@ check_gate_files() {
   return 0
 }
 
-check_change_files() {
-  [ -d docs/agent/changes ] || return 0
-  [ -f docs/agent/changes/_template.md ] \
-    || problem "docs/agent/changes/_template.md is missing. Restore it from the starter kit."
-  python3 - <<'PY' || fail=1
-import pathlib, re, sys
-
-HEADINGS = ("Intent", "Tier", "Acceptance", "Tasks", "Out of scope", "Evidence")
-TEST_REF = re.compile(r"test: `([^`]+)`")
-
-
-def sections(text):
-    parts, name = {}, None
-    for line in text.splitlines():
-        if line.startswith("## "):
-            name = line[3:].strip()
-            parts[name] = []
-        elif name:
-            parts[name].append(line)
-    return parts
-
-
-def closed_problems(path, parts, criteria):
-    found = []
-    for line in criteria:
-        for ref in TEST_REF.findall(line):
-            if not pathlib.Path(ref.split("::")[0]).exists():
-                found.append(f"{path} is closed but its test {ref} does not exist.")
-    if any(line.lstrip().startswith("- [ ]") for line in parts["Tasks"]):
-        found.append(f"{path} is closed with unchecked tasks; tick them or reopen the change.")
-    evidence = "\n".join(parts["Evidence"])
-    if not re.search(r"^- verification: verified\b", evidence, re.M):
-        found.append(f"{path} is closed without a '- verification: verified ...' line under Evidence.")
-    if re.search(r"<[^<>]*>", evidence):
-        found.append(f"{path} is closed with <placeholders> left under Evidence.")
-    return found
-
-
-def problems_in(path):
-    text = re.sub(r"<!--.*?-->", "", path.read_text(errors="replace"), flags=re.S)
-    parts = sections(text)
-    missing = ["## " + h for h in HEADINGS if h not in parts]
-    if missing:
-        return [f"{path} lacks {', '.join(missing)}; "
-                "copy the headings from docs/agent/changes/_template.md."]
-    status = re.search(r"^status: (open|closed)\s*$", text, re.M)
-    if not status:
-        return [f"{path} needs a line 'status: open' or 'status: closed'."]
-    criteria = [line for line in parts["Acceptance"] if line.startswith("- ")]
-    found = [] if criteria else [f"{path} has no acceptance criteria under ## Acceptance."]
-    found += [f"{path}: acceptance line names no test: `path`: {line}"
-              for line in criteria if not TEST_REF.search(line)]
-    if status.group(1) == "closed":
-        found += closed_problems(path, parts, criteria)
-    return found
-
-
-problems = []
-for change in sorted(pathlib.Path("docs/agent/changes").glob("*.md")):
-    if change.name != "_template.md":
-        problems += problems_in(change)
-for problem in problems:
-    print("FAIL: " + problem)
-sys.exit(1 if problems else 0)
-PY
+check_change_files() {  # change files and living specs; ops/agent/changes.py holds the rules
+  local f base="${range%%..*}"
+  for f in docs/agent/changes/_template.md docs/agent/specs/_template.md; do
+    [ -f "$f" ] || problem "$f is missing. Restore it from the starter kit."
+  done
+  [ -n "$range" ] || base="$(git merge-base HEAD '@{upstream}' 2>/dev/null || git rev-parse --verify -q HEAD || true)"
+  python3 ops/agent/changes.py check "$base" || fail=1
   return 0
 }
 

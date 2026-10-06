@@ -83,10 +83,10 @@ failing_commit() {  # failing_commit <dir>: commit a code change that makes veri
   mkdir -p "$1/src"; echo x > "$1/src/a.txt"; touch "$1/fail-verify"; commit_in "$1" "feat: failing"
 }
 
-change_file() {  # change_file <dir> <open|closed> <test-path>: write a well-formed change file
-  cat > "$1/docs/agent/changes/demo.md" <<EOF
+change_file() {  # change_file <dir> <name> <open|closed> <test-path>: write a well-formed T1 change
+  cat > "$1/docs/agent/changes/$2.md" <<EOF
 # Demo change
-status: $2
+status: $3
 
 ## Intent
 Show that the kit accepts a well-formed change file.
@@ -95,7 +95,7 @@ Show that the kit accepts a well-formed change file.
 T1 · a feature
 
 ## Acceptance
-- Given a kit copy, when the check runs, then it passes · test: \`$3\`
+- Given a kit copy, when the check runs, then it passes · test: \`$4\`
 
 ## Tasks
 - [x] write the change file
@@ -107,6 +107,21 @@ T1 · a feature
 - verification: verified — command: \`./ops/verify.sh\` — at: 2026-10-06, uncommitted
 - last lines: OK: agent kit checks passed
 EOF
+}
+
+add_delta() {  # add_delta <dir> <name> <delta-lines>: make a change T2 with Design and a Spec delta
+  edit "$1/docs/agent/changes/$2.md" "T1 · a feature" "T2 · crosses modules"
+  printf '\n## Design\nOne module owns the rule.\n\n## Spec delta\nspec: docs/agent/specs/demo.md\n%s\n' "$3" \
+    >> "$1/docs/agent/changes/$2.md"
+}
+
+archive_expect() {  # archive_expect ok|fail <case> <dir> <name> <pattern>: archive one change file
+  local want="$1" name="$2" dir="$3" change="$4" pattern="$5" out rc=0
+  out="$(cd "$dir" && ./ops/agent/changes.py archive "docs/agent/changes/$change.md" 2>&1)" || rc=$?
+  if { [ "$want" = ok ] && [ "$rc" -eq 0 ]; } || { [ "$want" = fail ] && [ "$rc" -ne 0 ]; }; then
+    if grep -q "$pattern" <<<"$out"; then ok "$name"; return; fi
+  fi
+  bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'
 }
 
 echo "== check-agent-kit.sh =="
@@ -127,7 +142,9 @@ d="$(fresh_copy hookpath)"; edit "$d/.claude/settings.json" "ops/agent/session-s
 check_expect fail "hook path missing" "$d"
 d="$(fresh_copy projdir)"; edit "$d/.claude/settings.json" '$(git rev-parse --show-toplevel)' '${CLAUDE_PROJECT_DIR}'
 check_expect fail "CLAUDE_PROJECT_DIR in hook" "$d"
-d="$(fresh_copy codexto)"; edit "$d/.codex/hooks.json" '"timeout": 3 }' '"timeout": 10 }'; check_expect fail "Codex SessionEnd timeout over 3 s" "$d"
+d="$(fresh_copy optin)"; (cd "$d/contrib/untested" && tar --exclude=README.md -cf - .) | (cd "$d" && tar -xf -)
+check_expect ok "untested configs pass the check once copied to the root" "$d"
+edit "$d/.codex/hooks.json" '"timeout": 3 }' '"timeout": 10 }'; check_expect fail "Codex SessionEnd timeout over 3 s" "$d"
 d="$(fresh_copy unconfigured)"; edit "$d/ops/verify.sh" "$configured" $'# KIT-PLACEHOLDER restored\ntrue'
 check_expect fail "verify.sh unconfigured on a filled project" "$d"
 d="$(fresh_copy cred)"; echo "token: ghp_$(printf 'a%.0s' {1..36})" >> "$d/docs/agent/STATUS.md"; check_expect fail "credential pattern" "$d"
@@ -144,6 +161,7 @@ import sys, pathlib
 p = pathlib.Path(sys.argv[1]); lines = p.read_text().splitlines(keepends=True); p.write_text("".join(lines[:-1]))
 PY
 check_expect fail "DECISIONS.md line removed" "$d" --range HEAD..
+d="$(fresh_copy zerobase)"; check_expect ok "a zero push base skips the range rules" "$d" --range "$(printf '0%.0s' {1..40})..HEAD"
 d="$(fresh_copy fresh)"; mkdir -p "$d/src"; echo x > "$d/src/a.txt"; commit_in "$d" "feat: add file"
 check_expect fail "code changed without STATUS.md in range" "$d" --range HEAD~1..HEAD
 d="$(fresh_copy wip)"; mkdir -p "$d/src"; echo x > "$d/src/a.txt"; commit_in "$d" "wip: scratch"
@@ -159,20 +177,58 @@ d="$(fresh_copy nolist)"; rm "$d/ops/agent/non-code-paths.txt"; check_expect fai
 d="$(fresh_copy hookx)"; chmod -x "$d/.githooks/pre-commit"; check_expect fail "pre-commit hook not executable" "$d"
 d="$(fresh_copy hooktodo)"; out="$(cd "$d" && CI='' ./ops/check-agent-kit.sh)"
 if grep -q 'core.hooksPath' <<<"$out"; then ok "reminds to enable the pre-commit gate"; else bad "reminds to enable the pre-commit gate"; fi
-d="$(fresh_copy chopen)"; change_file "$d" open tests/not_written_yet.sh; check_expect ok "open change file passes" "$d"
-d="$(fresh_copy chclosed)"; change_file "$d" closed ops/test-kit.sh; check_expect ok "closed change file with evidence passes" "$d"
-d="$(fresh_copy chhead)"; change_file "$d" open x; edit "$d/docs/agent/changes/demo.md" "## Out of scope" "## Notes"
+d="$(fresh_copy chopen)"; change_file "$d" demo open tests/not_written_yet.sh; check_expect ok "open change file passes" "$d"
+d="$(fresh_copy chclosed)"; change_file "$d" demo closed ops/test-kit.sh; check_expect fail "a closed change must be archived" "$d"
+d="$(fresh_copy chhead)"; change_file "$d" demo open x; edit "$d/docs/agent/changes/demo.md" "## Out of scope" "## Notes"
 check_expect fail "change file missing a section" "$d"
-d="$(fresh_copy chstatus)"; change_file "$d" open x; edit "$d/docs/agent/changes/demo.md" "status: open" "state: open"
+d="$(fresh_copy chstatus)"; change_file "$d" demo open x; edit "$d/docs/agent/changes/demo.md" "status: open" "state: open"
 check_expect fail "change file without status line" "$d"
-d="$(fresh_copy chtest)"; change_file "$d" open x; edit "$d/docs/agent/changes/demo.md" ' · test: `x`' ""
+d="$(fresh_copy chtest)"; change_file "$d" demo open x; edit "$d/docs/agent/changes/demo.md" ' · test: `x`' ""
 check_expect fail "acceptance line without a test" "$d"
-d="$(fresh_copy chgone)"; change_file "$d" closed tests/missing_test.sh; check_expect fail "closed change names a missing test" "$d"
-d="$(fresh_copy chtask)"; change_file "$d" closed ops/test-kit.sh; edit "$d/docs/agent/changes/demo.md" "- [x]" "- [ ]"
-check_expect fail "closed change with unchecked tasks" "$d"
-d="$(fresh_copy chnoev)"; change_file "$d" closed ops/test-kit.sh
+d="$(fresh_copy cht2)"; change_file "$d" demo open x; edit "$d/docs/agent/changes/demo.md" "T1 · a feature" "T2 · crosses modules"
+check_expect fail "T2 change without Design and Spec delta" "$d"
+d="$(fresh_copy specok)"; printf '# Demo spec\n\n## Requirements\n- DEMO-1: a\n- DEMO-2: b\n' > "$d/docs/agent/specs/demo.md"
+check_expect ok "well-formed spec passes" "$d"
+d="$(fresh_copy specdup)"; printf '# Demo spec\n\n## Requirements\n- DEMO-1: a\n- DEMO-1: b\n' > "$d/docs/agent/specs/demo.md"
+check_expect fail "spec with a duplicate ID" "$d"
+d="$(fresh_copy specid)"; printf '# Demo spec\n\n## Requirements\n- a rule without an ID\n' > "$d/docs/agent/specs/demo.md"
+check_expect fail "spec requirement without an ID" "$d"
+d="$(fresh_copy gap)"; change_file "$d" demo open tests/not_written_yet.sh; out="$(cd "$d" && ./ops/check-agent-kit.sh 2>&1)"
+if grep -q 'GAP: .*not_written_yet.sh does not exist' <<<"$out"; then ok "GAP: an acceptance test not written yet"; else bad "GAP: missing test"; fi
+d="$(fresh_copy gapold)"; change_file "$d" demo open ops/test-kit.sh; out="$(cd "$d" && ./ops/check-agent-kit.sh 2>&1)"
+if grep -q 'GAP: .*ops/test-kit.sh is unchanged' <<<"$out"; then ok "GAP: an acceptance test unchanged since the base"; else bad "GAP: unchanged test"; fi
+
+echo "== changes.py archive =="
+d="$(fresh_copy aropen)"; change_file "$d" demo open ops/test-kit.sh; archive_expect fail "refuses an open change" "$d" demo "status: closed"
+d="$(fresh_copy argone)"; change_file "$d" demo closed tests/missing_test.sh
+archive_expect fail "refuses a closed change whose test is missing" "$d" demo "does not exist"
+d="$(fresh_copy artask)"; change_file "$d" demo closed ops/test-kit.sh; edit "$d/docs/agent/changes/demo.md" "- [x]" "- [ ]"
+archive_expect fail "refuses unchecked tasks" "$d" demo "unchecked tasks"
+d="$(fresh_copy arnoev)"; change_file "$d" demo closed ops/test-kit.sh
 edit "$d/docs/agent/changes/demo.md" "- verification: verified" "- verification: <verified | partial | failed>"
-check_expect fail "closed change without evidence" "$d"
+archive_expect fail "refuses a change without verified evidence" "$d" demo "verification: verified"
+d="$(fresh_copy arfix)"; change_file "$d" demo closed ops/test-kit.sh; edit "$d/docs/agent/changes/demo.md" "T1 · a feature" "T1 fix · a bug"
+archive_expect fail "a fix needs a test that failed first" "$d" demo "failed first"
+echo "- failed first: ops/test-kit.sh exited 1 before the fix" >> "$d/docs/agent/changes/demo.md"
+archive_expect ok "a fix with failed-first evidence archives" "$d" demo "archived"
+d="$(fresh_copy art1)"; change_file "$d" demo closed ops/test-kit.sh; archive_expect ok "archives a closed T1 change" "$d" demo "archived"
+if ls "$d"/docs/agent/changes/archive/*-demo.md >/dev/null 2>&1 && [ ! -e "$d/docs/agent/changes/demo.md" ]; then ok "the change file moves to archive/"
+else bad "the change file moves to archive/"; fi
+check_expect ok "the check passes after archiving" "$d"
+d="$(fresh_copy art2)"; spec="$d/docs/agent/specs/demo.md"
+change_file "$d" add closed ops/test-kit.sh; add_delta "$d" add $'### ADDED\n- DEMO-1: first rule\n- DEMO-2: second rule'
+archive_expect ok "archive creates the spec from ADDED" "$d" add "merged the Spec delta"
+change_file "$d" edit closed ops/test-kit.sh; add_delta "$d" edit $'### MODIFIED\n- DEMO-1: first rule, revised\n### REMOVED\n- DEMO-2'
+archive_expect ok "archive applies MODIFIED and REMOVED" "$d" edit "merged the Spec delta"
+if grep -q 'DEMO-1: first rule, revised' "$spec" && ! grep -q 'DEMO-2' "$spec"; then ok "the spec holds the merged requirements"
+else bad "the spec holds the merged requirements"; sed 's/^/     /' "$spec"; fi
+check_expect ok "merged spec and archive pass the check" "$d"
+change_file "$d" dup closed ops/test-kit.sh; add_delta "$d" dup $'### ADDED\n- DEMO-1: again'
+archive_expect fail "ADDED with an existing ID is refused" "$d" dup "already exists"
+if [ -e "$d/docs/agent/changes/dup.md" ] && [ "$(grep -c 'DEMO-1' "$spec")" -eq 1 ]; then ok "a refused archive changes nothing"
+else bad "a refused archive changes nothing"; fi
+change_file "$d" ghost closed ops/test-kit.sh; add_delta "$d" ghost $'### MODIFIED\n- DEMO-9: nothing'
+archive_expect fail "MODIFIED with an unknown ID is refused" "$d" ghost "not in the spec"
 
 echo "== session hooks =="
 d="$(fresh_copy stamp)"; (cd "$d" && echo y > dirty.txt && ./ops/agent/session-end.sh)
@@ -255,9 +311,10 @@ claims_done "$d"; blocked "editing the template is not a change file" "no change
 d="$(fresh_copy nudgesmall)"; start "$d"; echo x > "$d/small.txt"
 touch "$d/docs/agent/STATUS.md"; claims_done "$d"; allowed "a small change needs no change file"
 d="$(fresh_copy nudgeopen)"; start "$d"; mkdir -p "$d/src"; for i in 1 2 3 4; do echo x > "$d/src/f$i.txt"; done
-change_file "$d" open src/f1.txt; touch "$d/docs/agent/STATUS.md"; claims_done "$d"; blocked "an open change file nudges on a claim" "still open"
+change_file "$d" demo open src/f1.txt; touch "$d/docs/agent/STATUS.md"; claims_done "$d"; blocked "an open change file nudges on a claim" "still open"
 d="$(fresh_copy nudgeclosed)"; start "$d"; mkdir -p "$d/src"; for i in 1 2 3 4; do echo x > "$d/src/f$i.txt"; done
-change_file "$d" closed src/f1.txt; touch "$d/docs/agent/STATUS.md"; claims_done "$d"; allowed "a closed change file allows"
+change_file "$d" demo closed src/f1.txt; (cd "$d" && ./ops/agent/changes.py archive docs/agent/changes/demo.md >/dev/null)
+touch "$d/docs/agent/STATUS.md"; claims_done "$d"; allowed "an archived change allows"
 d="$(fresh_copy noclaim)"; start "$d"; mkdir -p "$d/src"; for i in 1 2 3 4; do echo x > "$d/src/f$i.txt"; done
 gate "$d" claude '{"last_assistant_message":"Which option do you prefer?"}'; allowed "no completion claim, no nudge"
 

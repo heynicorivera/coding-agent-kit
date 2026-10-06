@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Pre-finish gate for the agent kit: the turn may end only if the changed code verifies.
 
-Wired as Claude Code and Copilot CLI `Stop` (.claude/settings.json), Codex `Stop`
-(.codex/hooks.json), Cursor `stop` (.cursor/hooks.json) and Copilot `agentStop`
-(.github/hooks/agent-kit.json). Reads the hook payload on stdin and answers in the shape each
-tool documents. `--save-base`, run by session-start.sh, records HEAD as the session base.
+Wired as Claude Code and Copilot CLI `Stop` (.claude/settings.json); the untested configs in
+contrib/untested/ wire it as Codex `Stop`, Cursor `stop` and Copilot `agentStop`. Reads the hook
+payload on stdin and answers in the shape each tool documents. `--save-base`, run by
+session-start.sh, records HEAD as the session base.
 
 Changes are measured from the session base (else the merge-base with the upstream branch, else
 HEAD), so commits made during the session count. Paths in ops/agent/non-code-paths.txt are not
@@ -62,12 +62,12 @@ STATUS_NUDGE = (
 MISSING_CHANGE_NUDGE = (
     "This change touches {files} code file(s) and {lines} line(s), and no change file under "
     "docs/agent/changes/ was written or updated. If it is T1 or T2 (AGENTS.md rule 3), copy "
-    "docs/agent/changes/_template.md, fill Intent, Tier, Acceptance and Tasks, and close it with "
-    "Evidence. If it is T0, say so and finish."
+    "docs/agent/changes/_template.md and fill Intent, Tier, Acceptance and Tasks; when done, close "
+    "it and run ./ops/agent/changes.py archive <file>. If it is T0, say so and finish."
 )
 OPEN_CHANGE_NUDGE = (
-    "Change file(s) still open: {paths}. If the work is done, fill Evidence, tick the Tasks and "
-    "set status: closed. If not, say what remains."
+    "Change file(s) still open: {paths}. If the work is done, fill Evidence, tick the Tasks, set "
+    "status: closed and run ./ops/agent/changes.py archive <file>. If not, say what remains."
 )
 
 

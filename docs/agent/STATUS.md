@@ -3,35 +3,34 @@
      Under 60 lines. Every claim names its evidence. No secrets, no personal data. -->
 
 updated: 2026-10-06 · commit: uncommitted on branch harden-gate, based on a0e820f (the maintainer commits)
-verification: verified — command: `./ops/verify.sh` — at: 2026-10-06, uncommitted tree on a0e820f (kit check OK, `./ops/test-kit.sh` 71/71)
+verification: verified — command: `./ops/verify.sh` — at: 2026-10-06, uncommitted tree on a0e820f (kit check OK, `./ops/test-kit.sh` 92/92)
 
 ## Now
-- In progress: nothing; phases 1 and 2 of the 2026-10-06 audit are done and await review
-- Uncommitted: all of it, on branch harden-gate in the worktree /tmp/coding-agent-kit-harden-gate
+- In progress: nothing; v2.0 (audit of 2026-10-06, phases 1–3 and 4.1–4.2) awaits review
+- Uncommitted: branch harden-gate in the worktree /tmp/coding-agent-kit-harden-gate; phases 1–2
+  are staged, phase 3 and the release files are not (two commits)
 
 ## Last session
-- 2026-10-06, phase 1 (harden the gate): `ops/agent/stop_gate.py` measures changes from a session
-  base recorded by `ops/agent/session-start.sh`, so commits count (B1); a gate file changed, deleted
-  or `chmod -x`-ed since the base blocks, and "unconfigured" is read from the base (B2–B4);
-  `.githooks/pre-commit` runs verify for every tool; Claude deny list gains Bash patterns;
-  `ops/agent/non-code-paths.txt` is the one non-code list (README-only edits skip verify);
-  `ops/agent/session-end.sh` replaces its stamp instead of appending
-- 2026-10-06, phase 2 (intent layer): `docs/agent/changes/_template.md`; AGENTS.md rule 3 (T0/T1/T2;
-  old rules 2 and 3 merged); the gate nudges once on a claim when > 3 files or > 50 lines changed
-  without a change file, or one is still open; `check_change_files` in the kit check
-- Evidence: `./ops/test-kit.sh` 32 → 71 cases; the 24 new behaviour cases fail against v1.0;
-  7 mutants of the gate each fail at least one case; the suite also passes under Python 3.8
-- `AGENT_KIT_STATUS_GATE` is now `AGENT_KIT_NUDGES`; README, PRD (R-verify, R7, R12, R14, new R18)
-  and DECISIONS updated; README says Version 1.1
+- 2026-10-06, phase 1: the stop gate measures from a session base, so commits count (B1); a gate
+  file changed since the base blocks (B2–B4); `.githooks/pre-commit`; Claude Bash deny patterns;
+  one non-code list `ops/agent/non-code-paths.txt`; `ops/agent/session-end.sh` replaces its stamp
+- 2026-10-06, phase 2: change files from `docs/agent/changes/_template.md`; AGENTS.md rule 3 tiers
+  (old rules 2 and 3 merged); the gate's change-file nudge
+- 2026-10-06, phase 3: living specs from `docs/agent/specs/_template.md`; `ops/agent/changes.py`
+  (`check` with advisory GAP lines, `archive` merges Spec deltas); `docs/agent/ONBOARD.md`;
+  untested configs moved to `contrib/untested/`; open-source model gate moved to `ROADMAP.md`
+- 2026-10-06, phase 4: bug-fix rule (`T1 fix` needs `failed first:`); `CHANGELOG.md`; v2.0
+- 2026-10-06, fix: the kit check aborted on a branch's first push (all-zero base); the v1.0 push
+  to main failed CI that way (GitHub run 36441532465); it now notes it and skips range rules
+- Evidence: `./ops/test-kit.sh` 32 → 92 cases; new cases fail against v1.0; 15 mutants of the gate
+  and `changes.py` each fail a case; the suite passes under Python 3.8
 
 ## Next
-1. Maintainer: review the worktree diff, commit on harden-gate, push, open a PR, merge when CI is
-   green; then `git config core.hooksPath .githooks` in each clone and start a new session
-   (a session opened before the merge has no recorded base and can block on the new gate files)
-2. Phase 3 needs input: the harness that runs the open-source model (3.4, 3.5), one existing repo
-   to onboard (3.2), approval to move untested tool configs to contrib/untested/ (3.4)
-3. Phase 4: git tags and a CHANGELOG; the bug-fix flow
-4. Test pickup in Codex, Copilot CLI and Cursor (not tested locally); record results in README
+1. Maintainer: review; commit the staged phases 1–2, then the rest; push harden-gate; open a PR;
+   merge when CI is green; tag the merge `v2.0.0`; run `git config core.hooksPath .githooks` in
+   the main checkout; remove the worktree; start a new agent session
+2. Onboard one existing repository with `docs/agent/ONBOARD.md`; record what it missed
+3. Later (ROADMAP.md): open-source model gate, Windows, promoting `contrib/untested/` configs
 
 ## Open questions (need a human)
 - Gemini/Antigravity hooks: designed, not shipped (handler field names unverified)
