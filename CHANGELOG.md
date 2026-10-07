@@ -12,6 +12,8 @@ Notable changes to the kit, newest first. Versions are git tags (`v2.0.0`); date
 - `ops/check-agent-kit.sh` fails while a `*.kit-new` file exists and prints the stamped version.
 - `.github/workflows/kit-self-test.yml` runs `ops/test-kit.sh` in the kit only. The self-test
   grows from 92 to 117 cases.
+- Known failures in `ops/test-kit.sh`: a ROADMAP finding is written as a case that must fail
+  until it is fixed; the suite fails once it passes. Two record the learnings-cap defect.
 
 ### Changed
 - `.github/workflows/agent-kit.yml` runs the range rules on pull requests only and not for

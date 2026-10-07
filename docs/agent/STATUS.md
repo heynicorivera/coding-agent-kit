@@ -5,7 +5,7 @@
 updated: 2026-10-07 · commit: the commit that contains this file, on branch `add-installer` off
 `main` at f864e2a, built in the worktree /tmp/coding-agent-kit-add-installer
 verification: verified — command: `./ops/verify.sh` (exit 0, "OK: agent kit checks passed") and
-`./ops/test-kit.sh` (117 passed, 0 failed) — at: 2026-10-07, uncommitted tree of that commit
+`./ops/test-kit.sh` (117 passed, 0 failed, 2 known failures) — at: 2026-10-07, uncommitted tree
 
 ## Now
 - In progress: 2.1, the updater. Waits for the maintainer: review, push `add-installer`, pull
@@ -23,6 +23,9 @@ verification: verified — command: `./ops/verify.sh` (exit 0, "OK: agent kit ch
 - Rehearsal on a throwaway clone of the first adopter (tracked files only): dry run and real run
   matched; its own verify passed; a second run wrote nothing
 - Change file closed and archived as `docs/agent/changes/archive/2026-10-07-add-installer.md`
+- Learnings cap: documented 20 is not enforced, injection drops entries past 40 lines, the
+  100-line cap counts the archive. Recorded as two known failures in the self-test and a ROADMAP
+  entry in the new four-part format (where seen, symptom, evidence, test); fix planned for 2.2
 
 ## Next
 1. Maintainer: merge and tag `v2.1.0`, then update the first adopter with `install.sh --from

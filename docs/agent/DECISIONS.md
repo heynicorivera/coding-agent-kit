@@ -177,3 +177,10 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
 - 2026-10-07: Committed kit files name adopters by role, never by repository name, and do not point
   at the local, excluded `FEEDBACK.md`; findings are restated in ROADMAP.md. Why: this repository
   is public and the adopters are private.
+- 2026-10-07: A ROADMAP finding is ready when it names where it was seen, the symptom, the evidence
+  and a self-test case, written first as a `known_failure` in `ops/test-kit.sh` that must keep
+  failing; the suite fails once it passes. Findings are triaged before each adopter update. Why:
+  a prose bullet goes stale (four of five first-adoption findings sat untracked through 2.0), a red
+  case does not, and it applies the kit's own "a fix needs a test that failed first" rule to the
+  kit. Rejected: GitHub issues (this repository is public and the adopters are private); skipped
+  tests (they pass silently once fixed and are never promoted).

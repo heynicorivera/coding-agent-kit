@@ -10,9 +10,14 @@ kit="$(cd "$(dirname "$0")/.." && pwd)"
 work="$(mktemp -d "${TMPDIR:-/tmp}/agent-kit-test.XXXXXX")"
 export XDG_CACHE_HOME="$work/cache"
 trap 'chmod -R u+w "$work" && rm -r -- "$work"' EXIT  # git objects are read-only; rm would ask
-passed=0; failed=0
+passed=0; failed=0; known=0
 ok()  { passed=$((passed + 1)); echo "ok   $1"; }
 bad() { failed=$((failed + 1)); echo "FAIL $1"; }
+known_failure() {  # known_failure <name> <command...>: a ROADMAP finding that must still fail
+  local name="$1"; shift
+  if "$@"; then bad "$name now passes: make it a normal case and close its ROADMAP entry"
+  else known=$((known + 1)); echo "known $name (ROADMAP Next)"; fi
+}
 # The copies' verification fails while a file named fail-verify exists, so no case edits verify.sh.
 configured='test ! -e fail-verify  # verification configured by test-kit'
 
@@ -320,6 +325,25 @@ gate "$d" claude '{"last_assistant_message":"Which option do you prefer?"}'; all
 
 if find "$work/cache" -name gate.log | grep -q .; then ok "gate writes its log"; else bad "gate writes its log"; fi
 
+echo "== learnings =="
+active_learnings() {  # active_learnings <dir> <n>: replace the Active section with n one-line entries
+  python3 - "$1/docs/agent/LEARNINGS.md" "$2" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]); n = int(sys.argv[2])
+entries = "".join(f"- 2026-10-07 · lesson {i} · evidence: test {i} · why: case\n" for i in range(1, n + 1))
+p.write_text(re.sub(r"(## Active\n)(?:- .*\n)*", lambda m: m.group(1) + entries, p.read_text(), count=1))
+PY
+}
+check_refuses() { ! (cd "$1" && ./ops/check-agent-kit.sh >/dev/null 2>&1); }
+nothing_dropped() {  # nothing_dropped <dir> <n>: entry n reaches the session, or the check refuses
+  check_refuses "$1" && return 0
+  (cd "$1" && printf '{"source":"startup"}' | ./ops/agent/session-start.sh | grep -q "lesson $2 ")
+}
+d="$(fresh_copy learn21)"; active_learnings "$d" 21
+known_failure "the check refuses a 21st active learning" check_refuses "$d"
+d="$(fresh_copy learn41)"; active_learnings "$d" 41
+known_failure "a 41st active learning is injected or refused" nothing_dropped "$d" 41
+
 echo "== install.sh =="
 v1_adopter() {  # v1_adopter <name> -> a committed v1.0.0 adopter, filled and trimmed like a real one
   local dir="$work/$1"
@@ -430,5 +454,5 @@ else
   echo "skip install.sh cases: tag v1.0.0 is not in this clone (fetch tags to run them)"
 fi
 
-echo; echo "$passed passed, $failed failed"
+echo; echo "$passed passed, $failed failed, $known known failures (ROADMAP Next)"
 [ "$failed" -eq 0 ]
