@@ -28,10 +28,11 @@ verification: verified — command: `./ops/verify.sh` (exit 0, "OK: agent kit ch
   entry in the new four-part format (where seen, symptom, evidence, test); fix planned for 2.2
 
 ## Next
-1. Maintainer: merge and tag `v2.1.0`, then update the first adopter with `install.sh --from
-   v1.0.0` on a branch, with no agent session open there (README, "Updating the kit")
-2. Record what that run missed in ROADMAP.md before the second adopter
-3. Then the fixes listed in ROADMAP.md Next as 2.2
+1. Maintainer: merge, then tag `v2.1.0` on the merge commit (a first tag landed on f864e2a,
+   before the merge; delete it and re-tag)
+2. Roll out in the ROADMAP.md order: the notes vault first, with `install.sh --from v1.0.0` on a
+   branch and no agent session open there (README, "Updating the kit")
+3. Record what each run missed in ROADMAP.md before the next adopter
 
 ## Open questions (need a human)
 - Gemini/Antigravity hooks: designed, not shipped (handler field names unverified)

@@ -184,3 +184,9 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   case does not, and it applies the kit's own "a fix needs a test that failed first" rule to the
   kit. Rejected: GitHub issues (this repository is public and the adopters are private); skipped
   tests (they pass silently once fixed and are never promoted).
+- 2026-10-07: The rollout runs from the cheapest mistake to the most expensive: the notes vault, then
+  a TypeScript application that has no kit yet, then the 2.2 fixes, then the docs-only repository
+  halfway through its first implementation, then the production application of the first adoption.
+  Why: the maintainer's call; each run is a test, and the two near-greenfield repositories absorb
+  the first mistakes. The fixes land before the two repositories that carry real work. Replaces the
+  order in the 2.1 ROADMAP draft (docs-only repository first).

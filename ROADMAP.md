@@ -10,9 +10,15 @@ and fails it once the fix lands, which is the signal to make it a normal case an
 Findings are triaged before each adopter update.
 
 ## Next
-- **Update the three adopters with `install.sh`**, one at a time: a docs-only repository first,
-  then a notes vault with a reduced kit, then fold in the fixes below, then the application
-  repository of the first adoption. Record every surprise here before the next one.
+- **Roll the kit out to four repositories, one at a time, cheapest mistake first.** Each run is a
+  test; record its surprises here before the next one starts.
+  1. A notes vault with a reduced v1.0 kit: an update with `install.sh`, the first with a patched
+     shared file and so the first `.kit-new` sidecar.
+  2. A TypeScript application with no kit yet: the first onboarding with `docs/agent/ONBOARD.md`
+     into an app that already has its own instruction files, CI and a hook manager.
+  3. The fixes below, shipped as 2.2.
+  4. A docs-only repository halfway through its first implementation: an update on 2.2.
+  5. The application repository of the first adoption, close to production: last.
 - **Fixes found in adopters, planned as 2.2:**
   - The learnings cap is not enforced as documented.
     Seen: kit review, 2026-10-07.
