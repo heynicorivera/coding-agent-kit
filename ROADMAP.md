@@ -4,8 +4,22 @@ Planned work, not built yet. Nothing here is promised by README.md or AGENTS.md.
 ships, it moves to CHANGELOG.md.
 
 ## Next
-- **Onboard one existing repository** with `docs/agent/ONBOARD.md`, after the 2.0 commit is on
-  GitHub. This is the done-when of audit item 3.2; record what the prompt missed.
+- **Update the three adopters with `install.sh`**, one at a time: a docs-only repository first,
+  then a notes vault with a reduced kit, then fold in the fixes below, then the application
+  repository of the first adoption. Record every surprise here before the next one.
+- **Fixes found in adopters, planned as 2.2:**
+  - The STATUS freshness rule fails bot commits and lockfile-only changes
+    (`check_status_freshness` in `ops/check-agent-kit.sh`). The workflow half shipped in 2.1.
+  - Stale references are judged by the disk, not git, so a backticked ignored path such as a
+    `.env` passes locally and fails in CI (`check_stale_references`).
+  - `ops/agent/session-end.sh` reads `git status --porcelain` without `--untracked-files=all`, so
+    it stamps a STATUS.md just written inside a still-untracked `docs/agent/`.
+  - Nothing says every command in `ops/verify.sh` must exit by itself; a watch-mode test runner
+    costs the gate's timeout three turns in a row.
+  - `check_hooks` reads `ops/verify.sh.` (with a sentence's full stop) out of a prose description
+    in a hook config and reports a missing hook script.
+- **Onboard one existing repository** with `docs/agent/ONBOARD.md`. This is the done-when of
+  audit item 3.2; record what the prompt missed.
 
 ## Later
 - **Gate for an open-source model.** Pick a harness that supports a stop hook and wire it to

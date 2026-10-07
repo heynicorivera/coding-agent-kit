@@ -320,5 +320,115 @@ gate "$d" claude '{"last_assistant_message":"Which option do you prefer?"}'; all
 
 if find "$work/cache" -name gate.log | grep -q .; then ok "gate writes its log"; else bad "gate writes its log"; fi
 
+echo "== install.sh =="
+v1_adopter() {  # v1_adopter <name> -> a committed v1.0.0 adopter, filled and trimmed like a real one
+  local dir="$work/$1"
+  mkdir -p "$dir"
+  git -C "$kit" archive v1.0.0 | tar -x -C "$dir"
+  python3 - "$dir/ops/verify.sh" "$configured" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+p.write_text(re.sub(r"# KIT-PLACEHOLDER.*", lambda _: sys.argv[2] + "\n", t, flags=re.S))
+PY
+  edit "$dir/AGENTS.md" "<one sentence: what this software does and for whom>" "An adopter"
+  rm -r -- "$dir/research" "$dir/ops/test-kit.sh" "$dir/PRD.md" "$dir/LICENSE"
+  cp "$kit/.github/workflows/agent-kit.yml" "$dir/.github/workflows/agent-kit.yml"
+  printf '# Status\n\nverification: none — command: `./ops/verify.sh` — at: 2026-10-07\n' \
+    > "$dir/docs/agent/STATUS.md"
+  (cd "$dir" && git init -q -b main && git add -A && git -c user.name=kit -c user.email=kit@example.com commit -qm "adopt v1.0")
+  echo "$dir"
+}
+
+install_run() {  # install_run <dir> [options...]: run install.sh against <dir>; sets rc, out
+  local dir="$1"; shift
+  rc=0
+  out="$("$kit/install.sh" "$@" "$dir" 2>&1)" || rc=$?
+}
+
+expect() {  # expect <name> <command...>: ok when the command succeeds
+  local name="$1"; shift
+  if "$@"; then ok "$name"; else bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'; fi
+}
+
+says() { grep -qF -- "$1" <<<"$out"; }
+refused() { [ "$rc" -eq 1 ] && grep -q '^install.sh: ' <<<"$out" && says "$1"; }
+clean() { [ -z "$(git -C "$1" status --porcelain --untracked-files=all)" ]; }
+
+kit_files_match() {  # kit_files_match <dir>: every kit-owned file equals the kit's, mode included
+  local f
+  for f in ops/check-agent-kit.sh ops/agent/stop_gate.py ops/agent/session-start.sh \
+    ops/agent/session-end.sh ops/agent/changes.py .githooks/pre-commit docs/agent/ONBOARD.md \
+    docs/agent/changes/_template.md docs/agent/specs/_template.md \
+    ops/agent/non-code-paths.txt .claude/settings.json; do
+    cmp -s "$kit/$f" "$1/$f" || { echo "     differs: $f"; return 1; }
+    if [ -x "$kit/$f" ] && [ ! -x "$1/$f" ]; then echo "     not executable: $f"; return 1; fi
+  done
+}
+
+nothing_unshipped() {  # nothing_unshipped <dir>: install.sh copied none of the kit-only files
+  local f
+  for f in ops/test-kit.sh install.sh PRD.md LICENSE research contrib \
+    .github/workflows/kit-self-test.yml; do
+    [ ! -e "$1/$f" ] || { echo "     shipped: $f"; return 1; }
+  done
+}
+
+adopter_files_kept() {
+  git -C "$1" diff --quiet HEAD -- AGENTS.md CLAUDE.md ops/verify.sh docs/agent .github .gitignore
+}
+
+if git -C "$kit" rev-parse -q --verify 'v1.0.0^{commit}' >/dev/null; then
+  d="$(v1_adopter upd)"; install_run "$d" --from v1.0.0
+  expect "install update from v1.0.0: exits 0" test "$rc" -eq 0
+  expect "install update from v1.0.0: adopter-owned files unchanged" adopter_files_kept "$d"
+  expect "install update from v1.0.0: kit-owned files equal the kit's" kit_files_match "$d"
+  expect "install update from v1.0.0: kit-only files not shipped" nothing_unshipped "$d"
+  expect "install update from v1.0.0: version stamped" test -s "$d/ops/agent/KIT_VERSION"
+  check_expect ok "install update from v1.0.0: the kit check passes" "$d"
+  out="$(cd "$d" && ./ops/check-agent-kit.sh 2>&1)" || true
+  expect "install update from v1.0.0: the check notes the version" says "NOTE: kit "
+
+  commit_in "$d" "update the kit"; install_run "$d"
+  expect "install is idempotent: second run writes nothing" says "Nothing to write"
+  expect "install is idempotent: tree stays clean" clean "$d"
+
+  d="$(v1_adopter side)"
+  edit "$d/.claude/settings.json" '"Edit(ops/verify.sh)",' $'"Edit(ops/verify.sh)",\n      "Bash(git push --force *)",'
+  commit_in "$d" "patch the deny list"; install_run "$d" --from v1.0.0
+  expect "install writes a sidecar: patched file kept" git -C "$d" diff --quiet HEAD -- .claude/settings.json
+  expect "install writes a sidecar: kit copy beside it" \
+    cmp -s "$kit/.claude/settings.json" "$d/.claude/settings.json.kit-new"
+  expect "install writes a sidecar: report names it" says ".claude/settings.json.kit-new"
+  out="$(cd "$d" && ./ops/check-agent-kit.sh 2>&1)" && rc=0 || rc=$?
+  expect "install writes a sidecar: the check fails until it is merged" \
+    says "FAIL: .claude/settings.json.kit-new is the kit's copy"
+  install_run "$d"; expect "install refuses: an unmerged sidecar" refused ".claude/settings.json.kit-new exists"
+
+  d="$(v1_adopter dry)"; install_run "$d" --dry-run --from v1.0.0
+  expect "install dry run: says would write" says "would write ops/agent/stop_gate.py"
+  expect "install dry run: changes nothing" clean "$d"
+
+  d="$(v1_adopter rep)"
+  edit "$d/.codex/hooks.json" '"command": "python3 ' '"command": "AGENT_KIT_STATUS_GATE=0 python3 '
+  commit_in "$d" "silence the status gate"; install_run "$d" --from v1.0.0
+  expect "install report: core.hooksPath step" says "config core.hooksPath .githooks"
+  expect "install report: AGENTS.md rules from the kit" says "Classify each change after reading the code"
+  expect "install report: AGENT_KIT_STATUS_GATE hits" says ".codex/hooks.json"
+  touch "$d/stray.txt"; install_run "$d"
+  expect "install refuses: a dirty target" refused "has uncommitted changes; commit or stash them"
+
+  nogit="$work/nogit"; mkdir -p "$nogit"; install_run "$nogit"
+  expect "install refuses: not a git work tree" refused "$nogit is not a git work tree"
+  install_run "$kit"; expect "install refuses: the kit itself" refused "is this kit's own repository"
+
+  d="$(v1_adopter abs)"; (cd "$d" && git rm -q .github/workflows/agent-kit.yml); commit_in "$d" "drop CI"
+  install_run "$d" --from v1.0.0
+  expect "install absent shared files: optional one reported" says ".github/workflows/agent-kit.yml is absent"
+  expect "install absent shared files: optional one not written" test ! -e "$d/.github/workflows/agent-kit.yml"
+  expect "install absent shared files: required one written" test -f "$d/ops/agent/non-code-paths.txt"
+else
+  echo "skip install.sh cases: tag v1.0.0 is not in this clone (fetch tags to run them)"
+fi
+
 echo; echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]

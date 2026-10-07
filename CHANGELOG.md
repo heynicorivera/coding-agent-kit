@@ -2,6 +2,22 @@
 
 Notable changes to the kit, newest first. Versions are git tags (`v2.0.0`); dates are ISO 8601.
 
+## 2.1.0 — 2026-10-07
+
+### Added
+- `install.sh` updates the kit in an adopter repository: overwrites kit-owned files, never writes
+  adopter-owned ones, and puts the kit's copy of a locally patched shared file beside it as
+  `<path>.kit-new`. `--dry-run` previews; `--from <tag>` names the kit an older copy came from.
+  It stamps `ops/agent/KIT_VERSION` and ends with the steps left to a human.
+- `ops/check-agent-kit.sh` fails while a `*.kit-new` file exists and prints the stamped version.
+- `.github/workflows/kit-self-test.yml` runs `ops/test-kit.sh` in the kit only. The self-test
+  grows from 92 to 117 cases.
+
+### Changed
+- `.github/workflows/agent-kit.yml` runs the range rules on pull requests only and not for
+  Dependabot, and no longer runs the self-test: the version proven in the first adopter.
+- README and PRD §6 no longer tell adopters to copy or run `ops/test-kit.sh`.
+
 ## 2.0.0 — 2026-10-06
 
 ### Fixed
