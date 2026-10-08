@@ -401,6 +401,12 @@ adopter_files_kept() {
   git -C "$1" diff --quiet HEAD -- AGENTS.md CLAUDE.md ops/verify.sh docs/agent .github .gitignore
 }
 
+hook_stays_out() {  # hook_stays_out <dir>: neither settings nor a sidecar brings SessionEnd back
+  [ "$rc" -eq 0 ] \
+    && ! grep -qsF '"SessionEnd"' "$1/.claude/settings.json" "$1/.claude/settings.json.kit-new"
+}
+no_pull_request_step() { [ "$rc" -eq 0 ] && ! says "open a pull request"; }
+
 if git -C "$kit" rev-parse -q --verify 'v1.0.0^{commit}' >/dev/null; then
   d="$(v1_adopter upd)"; install_run "$d" --from v1.0.0
   expect "install update from v1.0.0: exits 0" test "$rc" -eq 0
@@ -450,6 +456,21 @@ if git -C "$kit" rev-parse -q --verify 'v1.0.0^{commit}' >/dev/null; then
   expect "install absent shared files: optional one reported" says ".github/workflows/agent-kit.yml is absent"
   expect "install absent shared files: optional one not written" test ! -e "$d/.github/workflows/agent-kit.yml"
   expect "install absent shared files: required one written" test -f "$d/ops/agent/non-code-paths.txt"
+
+  d="$(v1_adopter keep)"
+  python3 - "$d/.claude/settings.json" <<'PY'
+import json, re, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+t, n = re.subn(r',\n    "SessionEnd": \[\n.*?\n    \]', "", p.read_text(), count=1, flags=re.S)
+assert n == 1, "SessionEnd block not found"
+json.loads(t)
+p.write_text(t)
+PY
+  commit_in "$d" "leave out the session-end stamp"; install_run "$d" --from v1.0.0
+  known_failure "install sidecar keeps a hook the adopter removed" hook_stays_out "$d"
+
+  d="$(v1_adopter noremote)"; install_run "$d" --from v1.0.0
+  known_failure "install closing steps fit a repository without a remote" no_pull_request_step
 else
   echo "skip install.sh cases: tag v1.0.0 is not in this clone (fetch tags to run them)"
 fi

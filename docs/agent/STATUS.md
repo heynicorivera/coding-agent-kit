@@ -2,40 +2,42 @@
 <!-- Injected at session start by the kit hooks. Rewritten, never appended, whenever code changes.
      Under 60 lines. Every claim names its evidence. No secrets, no personal data. -->
 
-updated: 2026-10-08 · commit: the commit that contains this file, on branch `status-after-v2-1`
-off `main` at d217eab
+updated: 2026-10-08 · commit: the commit that contains this file, on branch
+`vault-rollout-findings`, stacked on `status-after-v2-1` (pull request #4) off `main` at d217eab
 verification: verified — command: `./ops/verify.sh` (exit 0, "OK: agent kit checks passed") and
-`./ops/test-kit.sh` (117 passed, 0 failed, 2 known failures) — at: 2026-10-08, d217eab + this file
+`./ops/test-kit.sh` (117 passed, 0 failed, 4 known failures) — at: 2026-10-08, uncommitted tree
 
 ## Now
 - 2.1 is released: pull request #3 merged as d217eab, tag `v2.1.0` points at it, and both
   workflows (agent-kit, kit-self-test) passed on it (`gh run list --branch main`)
-- The adopter rollout starts next, in the ROADMAP.md order; no adopter has 2.1 yet
+- In progress: the notes-vault update (rollout step 1). A `kit-update` branch exists there, no
+  agent session is open in it, and the dry run is read. A rehearsal on a clone passed: after the
+  merge its verify printed both OKs, and a second run wrote nothing. Waits for the maintainer's
+  real run
+- The vault's settings must be merged three-way (base: the v1.0.0 copy): its 2026-10-04 decision
+  left out the session-end hook, which the two-way sidecar diff shows as a kit line
 - Expected here, not a to-do: this repository's `ops/verify.sh` keeps its KIT-PLACEHOLDER block
   and AGENTS.md its 6 placeholders, so the kit check prints two TODO lines. This repository is the
   template adopters copy (DECISIONS.md, 2026-09-28); `./ops/test-kit.sh` is its real suite
 
 ## Last session
-- 2026-10-08: confirmed the merge, the re-tag and CI on main; rewrote this file
-- 2026-10-07: added `install.sh` (custody table, `.kit-new` sidecars, a KIT_VERSION stamp in
-  adopters, `--dry-run`, `--from`), a sidecar FAIL and a version NOTE in the kit check, 25
-  self-test cases, the CI split, README "Updating the kit", CHANGELOG 2.1.0; change file archived
-  as `docs/agent/changes/archive/2026-10-07-add-installer.md`
-- Rehearsal on a throwaway clone of the first adopter: dry run and real run matched; a second run
-  wrote nothing
-- Learnings cap defect: recorded as two known failures in the self-test and a ROADMAP entry; fix
-  planned for 2.2
+- 2026-10-08: confirmed the merge, the re-tag and CI on main; refreshed this file (#4); ran the
+  vault dry run and rehearsal; recorded two install.sh findings as known failures and ROADMAP
+  entries, each reverse-checked (change file
+  `docs/agent/changes/archive/2026-10-08-vault-rollout-findings.md`)
+- 2026-10-07: added `install.sh` (custody table, `.kit-new` sidecars, a KIT_VERSION stamp,
+  `--dry-run`, `--from`), 25 self-test cases, the CI split, CHANGELOG 2.1.0; recorded the
+  learnings-cap defect as two known failures
 
 ## Next
-1. Notes vault, an update (README, "Updating the kit in a repository"): on a new branch there,
-   with no agent session open in it, a dry run with `--from v1.0.0` (read-only), then the
-   maintainer runs the real one. Expected: kit-owned files overwritten, a KIT_VERSION stamp, and
-   a `.kit-new` sidecar for its patched Claude settings; its kit check fails until the sidecar is
-   merged and deleted. The maintainer then enables the pre-commit gate there (README Setup step 6)
-2. Record what that run missed in ROADMAP.md (four-part format, a known_failure case) before the
-   next adopter
-3. The TypeScript application with no kit yet: the first onboarding with `docs/agent/ONBOARD.md`
-4. The 2.2 fixes listed in ROADMAP.md, then the last two adopters on 2.2
+1. Maintainer: merge #4, then this branch's pull request
+2. Maintainer: the real vault run (install, apply the reviewed merged settings and Codex config,
+   delete the sidecar, enable the pre-commit gate, verify, commit on `kit-update`)
+3. A new agent session in the vault: AGENTS.md rules 1-3 against the kit's (decide whether the
+   change-file rule fits a vault where "a capture is not a code change"), STATUS and DECISIONS
+4. Record anything the real run adds in ROADMAP.md, then the TypeScript application onboarding
+5. The 2.2 fixes in ROADMAP.md (8 entries, 3 with known-failure tests), then the last two
+   adopters on 2.2
 
 ## Open questions (need a human)
 - Gemini/Antigravity hooks: designed, not shipped (handler field names unverified)
