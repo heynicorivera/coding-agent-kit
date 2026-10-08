@@ -190,3 +190,17 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   Why: the maintainer's call; each run is a test, and the two near-greenfield repositories absorb
   the first mistakes. The fixes land before the two repositories that carry real work. Replaces the
   order in the 2.1 ROADMAP draft (docs-only repository first).
+- 2026-10-08: Records-only changes (every path in `ops/agent/non-code-paths.txt`) are committed and
+  pushed to `main` by the agent at wrap-up, once `./ops/verify.sh` passes; anything else still goes
+  through a branch and a pull request the maintainer merges. Replaces the 2026-09-28 "the agent
+  stages only" for records. Why: the maintainer's call; approving a records-only pull request cost
+  a click per session and bought no review, and pull requests now list what shipped. CI still runs
+  on every push. Rejected: GitHub auto-merge for records pull requests (needs branch protection and
+  more pull requests); a SessionEnd hook that pushes (the model is gone by then, so nothing judges
+  or asks, and a push can fail silently within the hook's 3-10 s). Accepted risk: in a public
+  repository, records are published without a human look; rule 6 and the CI credential check stay.
+- 2026-10-08: STATUS.md's `updated:` and `at:` carry the time and zone read from the clock
+  (`date '+%Y-%m-%d %H:%M %Z'`); DECISIONS, LEARNINGS, change files and CHANGELOG keep dates. Why:
+  STATUS is rewritten several times a day (three committed versions on 2026-10-08, all dated
+  alike); the logs are append-only, so their order shows the sequence and git keeps exact times.
+  Rejected: times in every record (longer entries, no decision depends on the hour).

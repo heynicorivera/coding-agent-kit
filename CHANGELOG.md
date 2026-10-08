@@ -2,6 +2,15 @@
 
 Notable changes to the kit, newest first. Versions are git tags (`v2.0.0`); dates are ISO 8601.
 
+## Unreleased
+
+### Changed
+- AGENTS.md, Git: a records-only change (every path in `ops/agent/non-code-paths.txt`) is
+  committed and pushed to `main` at wrap-up once `./ops/verify.sh` passes; anything else goes
+  through a branch and a pull request. Existing adopters copy the lines into their own AGENTS.md.
+- STATUS.md: `updated:` and the verification line's `at:` carry the time and zone, read from the
+  clock (`2026-10-08 14:37 CEST`).
+
 ## 2.1.0 — 2026-10-07
 
 ### Added

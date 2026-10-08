@@ -129,6 +129,11 @@ archive_expect() {  # archive_expect ok|fail <case> <dir> <name> <pattern>: arch
   bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'
 }
 
+echo "== shipped templates =="
+if grep -qE '^updated: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} [A-Z0-9+:-]+ ' "$kit/docs/agent/STATUS.md"
+then ok "the shipped STATUS.md dates its update with a time"
+else bad "the shipped STATUS.md dates its update with a time"; fi
+
 echo "== check-agent-kit.sh =="
 d="$(fresh_copy pristine)"; check_expect ok "configured copy passes" "$d"
 d="$(fresh_copy filled)"; python3 - "$d/AGENTS.md" <<'PY'
