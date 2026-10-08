@@ -4,7 +4,7 @@ A repository template so a developer and their coding agents share one project c
 current between sessions, decide what to build before building it, and cannot call work done until
 it verifies. Configured and tested for Claude Code; Codex, Cursor, Copilot, Antigravity, Devin and
 Zed read its AGENTS.md natively, and untested configs for five more tools ship in
-`contrib/untested/`. Version 2.0 (2026-10-06); see `CHANGELOG.md` and `ROADMAP.md`.
+`contrib/untested/`. Version 2.1 (2026-10-07); see `CHANGELOG.md` and `ROADMAP.md`.
 
 ## What it does
 1. **Starts every session knowing where the project stands.** `docs/agent/STATUS.md` and the active
@@ -30,8 +30,10 @@ bash, git and python3 (3.8 or newer) on macOS or Linux. Windows is not supported
 are shell scripts (see ROADMAP.md). No other dependency.
 
 ## Setup (10 steps)
-1. Use this template (or copy the files into your project root). Delete `PRD.md` and `research/`
-   unless you want the design notes.
+1. Use this template (or copy the files into your project root). Delete `PRD.md`, `research/`,
+   `install.sh`, `ops/test-kit.sh` and `.github/workflows/kit-self-test.yml`: they
+   develop the kit, not your project. A repository that already has the kit updates with
+   `install.sh` instead (see "Updating the kit in a repository").
 2. Fill in `AGENTS.md` (Project, Commands, Conventions); keep 7 rules or fewer. In an existing
    codebase, ask your agent to follow `docs/agent/ONBOARD.md`: it fills these from repository
    evidence, proposes your `ops/verify.sh` commands and writes a spec for the first area you change.
@@ -41,10 +43,10 @@ are shell scripts (see ROADMAP.md). No other dependency.
    at the root (see `contrib/untested/README.md`). Each tool asks you once to trust hooks.
 6. Enable the pre-commit gate once per clone: `git config core.hooksPath .githooks`. Run it
    yourself; the Claude Code deny rules stop the agent from changing `core.hooksPath`.
-7. Run `./ops/check-agent-kit.sh` until it prints `OK` with no `TODO:` lines, then `./ops/test-kit.sh`.
+7. Run `./ops/check-agent-kit.sh` until it prints `OK` with no `TODO:` lines.
 8. Commit before the first agent session. The gate measures changes from the commit a session
    started on, and gate files changed during a session block it. `.github/workflows/agent-kit.yml`
-   runs the check, the self-test and `ops/verify.sh` on every push and pull request.
+   runs `ops/verify.sh` on every push and pull request, and the range rules on pull requests.
 9. Open your tool and ask "what did we cover last session?" — the briefing comes from STATUS.md.
 10. Make a change and say "done": the gate runs `ops/verify.sh` and asks for STATUS.md first.
 
@@ -63,6 +65,28 @@ presenting depends on the agent following them, and the pre-commit hook and CI c
 missed. Tested locally: Claude Code. `ops/test-kit.sh` checks the gate's output shape for every
 tool and validates the `contrib/untested/` configs; the tools themselves are configured from their
 documentation (URLs in `PRD.md`) and not run.
+
+## Updating the kit in a repository
+Run it from an up-to-date kit checkout (git 2.31 or newer), against a clean adopter on a new
+branch, with no agent session open there:
+
+    git -C <repo> switch -c kit-update
+    ./install.sh --dry-run <repo>          # read the report first
+    ./install.sh <repo>
+
+The first update of a repository that was copied by hand needs `--from <tag>` (for example
+`--from v1.0.0`); after that, `ops/agent/KIT_VERSION` remembers it. What happens to each file:
+
+| Files | On update |
+|---|---|
+| `ops/check-agent-kit.sh`, `ops/agent/*.py`, `ops/agent/*.sh`, `.githooks/pre-commit`, `docs/agent/ONBOARD.md`, the two `_template.md` files | overwritten: the kit owns them |
+| `AGENTS.md`, `CLAUDE.md`, `ops/verify.sh`, `docs/agent/STATUS.md`, `DECISIONS.md`, `LEARNINGS.md` | never written: you own them |
+| `.claude/settings.json`, `.github/workflows/agent-kit.yml`, `.gitignore`, `ops/agent/non-code-paths.txt` | overwritten if you never changed them; otherwise the kit's copy lands beside yours as `<path>.kit-new` with a diff, and the kit check fails until you merge it and delete the sidecar |
+| `ops/test-kit.sh`, `install.sh`, `contrib/`, `PRD.md`, `research/` and the other kit documents | never copied |
+
+The report ends with the steps left to you: merging sidecars, `core.hooksPath`, AGENTS.md rule
+changes, renamed variables, then STATUS.md, DECISIONS.md, `./ops/verify.sh`, commit, pull request.
+Start agent sessions there only after that commit.
 
 ## Change files and specs
 - **Open a change:** copy `docs/agent/changes/_template.md` to `docs/agent/changes/<name>.md`.
@@ -89,12 +113,14 @@ documentation (URLs in `PRD.md`) and not run.
 | `docs/agent/ONBOARD.md` | Prompt that onboards an existing repository; read on demand |
 | `ops/verify.sh` | The one verification command (your tests and lint, plus the kit check) |
 | `ops/check-agent-kit.sh` | Enforces the kit's rules; run locally and in CI |
-| `ops/test-kit.sh` | Proves the check, the hooks and the change tooling behave; run after setup and in CI |
+| `ops/test-kit.sh` | Kit only: proves the check, the hooks, the change tooling and `install.sh` behave |
+| `install.sh` | Kit only: updates the kit's files in an adopter repository |
 | `ops/agent/` | Hook scripts (session start, stop gate, session end), `changes.py`, the non-code list |
 | `.githooks/pre-commit` | Runs `ops/verify.sh` before every commit, for every tool |
 | `.claude/settings.json` | Claude Code hooks and deny rules (Copilot CLI reads it too) |
 | `contrib/untested/` | Configs for Codex, Cursor, Copilot cloud agent, Gemini CLI, Aider; inactive until copied |
-| `.github/workflows/agent-kit.yml` | CI: check, self-test, verify |
+| `.github/workflows/agent-kit.yml` | CI: verify on every push, range rules on pull requests |
+| `.github/workflows/kit-self-test.yml` | Kit only: runs `ops/test-kit.sh` |
 | `CHANGELOG.md`, `ROADMAP.md` | What shipped, what is planned |
 
 ## Troubleshooting

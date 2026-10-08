@@ -127,10 +127,13 @@ The kit is correct when all of the following hold on a fresh copy after step 7 o
 
 ## 6. Migration
 
-**v1.0 → v2.0**
+**v1.0 → v2.x** — run `./install.sh --from v1.0.0 <repo>` (README, "Updating the kit"); it does
+steps 1 and 2 and prints the rest.
 
-1. Replace `ops/agent/`, `ops/check-agent-kit.sh`, `ops/test-kit.sh` and `.claude/settings.json`;
-   add `.githooks/pre-commit` and run `git config core.hooksPath .githooks`.
+1. Replace `ops/agent/`, `ops/check-agent-kit.sh` and `.claude/settings.json`; add
+   `.githooks/pre-commit` and run `git config core.hooksPath .githooks`. Do not copy
+   `ops/test-kit.sh`: it tests the kit; in an adopter it copies the whole tree, ignored data
+   included, about thirty times, and stops at its first case once AGENTS.md is filled.
 2. Add `docs/agent/changes/_template.md`, `docs/agent/specs/_template.md` and `docs/agent/ONBOARD.md`.
 3. In AGENTS.md, merge rules 2 and 3 and add the tier rule as rule 3 (see the template).
 4. Rename `AGENT_KIT_STATUS_GATE` to `AGENT_KIT_NUDGES` wherever it is set.

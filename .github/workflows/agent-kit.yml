@@ -15,11 +15,10 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Kit check with push-range rules
+      - name: Kit check with pull-request range rules
+        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
         env:
-          AGENT_KIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          AGENT_KIT_BASE: ${{ github.event.pull_request.base.sha }}
         run: ./ops/check-agent-kit.sh --range "${AGENT_KIT_BASE}..HEAD"
-      - name: Kit self-test
-        run: ./ops/test-kit.sh
       - name: Verify (tests, lint, kit check)
         run: ./ops/verify.sh

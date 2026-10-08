@@ -112,6 +112,11 @@ check_gate_files() {
   if [ -e .githooks/pre-commit ] && [ ! -x .githooks/pre-commit ]; then
     problem ".githooks/pre-commit is not executable, so git skips it. Run: chmod +x .githooks/pre-commit"
   fi
+  local sidecar
+  while IFS= read -r sidecar; do
+    [ -n "$sidecar" ] || continue
+    problem "$sidecar is the kit's copy from install.sh; merge it into ${sidecar%.kit-new}, then delete it."
+  done < <(git ls-files --cached --others --exclude-standard -- '*.kit-new' 2>/dev/null)
   return 0
 }
 
@@ -190,6 +195,7 @@ report_todos() {
   if [ -z "${CI:-}" ] && [ -x .githooks/pre-commit ] && [ "$(git config core.hooksPath || true)" != .githooks ]; then
     echo "TODO: commits do not run ops/verify.sh yet; enable the pre-commit gate: git config core.hooksPath .githooks"
   fi
+  [ -f ops/agent/KIT_VERSION ] && echo "NOTE: kit $(head -n 1 ops/agent/KIT_VERSION), stamped by install.sh"
   return 0
 }
 

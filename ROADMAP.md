@@ -3,9 +3,45 @@
 Planned work, not built yet. Nothing here is promised by README.md or AGENTS.md. When an item
 ships, it moves to CHANGELOG.md.
 
+A finding is ready to fix when it has four parts: where it was seen (by role, never by repository
+name), the symptom, the evidence, and the self-test case that proves the fix. Write that case
+first as a `known_failure` in `ops/test-kit.sh`: it keeps the suite green while the defect exists
+and fails it once the fix lands, which is the signal to make it a normal case and close the entry.
+Findings are triaged before each adopter update.
+
 ## Next
-- **Onboard one existing repository** with `docs/agent/ONBOARD.md`, after the 2.0 commit is on
-  GitHub. This is the done-when of audit item 3.2; record what the prompt missed.
+- **Roll the kit out to four repositories, one at a time, cheapest mistake first.** Each run is a
+  test; record its surprises here before the next one starts.
+  1. A notes vault with a reduced v1.0 kit: an update with `install.sh`, the first with a patched
+     shared file and so the first `.kit-new` sidecar.
+  2. A TypeScript application with no kit yet: the first onboarding with `docs/agent/ONBOARD.md`
+     into an app that already has its own instruction files, CI and a hook manager.
+  3. The fixes below, shipped as 2.2.
+  4. A docs-only repository halfway through its first implementation: an update on 2.2.
+  5. The application repository of the first adoption, close to production: last.
+- **Fixes found in adopters, planned as 2.2:**
+  - The learnings cap is not enforced as documented.
+    Seen: kit review, 2026-10-07.
+    Symptom: the LEARNINGS.md header promises at most 20 active entries, but no check counts them;
+    `ops/agent/session-start.sh` injects only the first 40 lines of Active, so later entries are
+    committed yet never reach a session, silently; and the check's 100-line cap counts Converted
+    and Archived, which only grow, so passing it eventually means deleting archived entries.
+    Evidence: `check_memory_files` in `ops/check-agent-kit.sh` checks lines and `evidence:` only;
+    `head -40` in `session-start.sh`.
+    Test: known failures "the check refuses a 21st active learning" and "a 41st active learning
+    is injected or refused" in `ops/test-kit.sh`.
+  - The STATUS freshness rule fails bot commits and lockfile-only changes
+    (`check_status_freshness` in `ops/check-agent-kit.sh`). The workflow half shipped in 2.1.
+  - Stale references are judged by the disk, not git, so a backticked ignored path such as a
+    `.env` passes locally and fails in CI (`check_stale_references`).
+  - `ops/agent/session-end.sh` reads `git status --porcelain` without `--untracked-files=all`, so
+    it stamps a STATUS.md just written inside a still-untracked `docs/agent/`.
+  - Nothing says every command in `ops/verify.sh` must exit by itself; a watch-mode test runner
+    costs the gate's timeout three turns in a row.
+  - `check_hooks` reads `ops/verify.sh.` (with a sentence's full stop) out of a prose description
+    in a hook config and reports a missing hook script.
+- **Onboard one existing repository** with `docs/agent/ONBOARD.md`. This is the done-when of
+  audit item 3.2; record what the prompt missed.
 
 ## Later
 - **Gate for an open-source model.** Pick a harness that supports a stop hook and wire it to

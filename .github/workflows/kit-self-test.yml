@@ -1,0 +1,21 @@
+name: kit-self-test
+
+# Runs only in the coding-agent-kit repository. install.sh never copies this file into adopters:
+# ops/test-kit.sh tests the kit's own scripts, not an adopter's code.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Kit self-test
+        run: ./ops/test-kit.sh

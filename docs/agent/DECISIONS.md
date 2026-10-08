@@ -149,3 +149,44 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   `main` failed CI this way (run 36441532465), and every adopter's first push would too; the
   pull-request run still applies the range rules. Rejected: changing the workflow's base expression
   (the check is what crashed, and local `--range` use hits the same case).
+- 2026-10-07: Adopters update the kit with `install.sh`, built after the same copy had been done by
+  hand three times and two of the copies had drifted (a self-test copied then deleted, a CI
+  workflow patched locally). It sits at the repository root, outside `ops/`, so it is never among
+  the files it copies. Rejected: `ops/kit-sync.sh` with a self-exclusion; the manual recipe in
+  PRD §6 alone.
+- 2026-10-07: Every kit file has one custody class, held as arrays at the top of `install.sh`:
+  kit-owned (overwritten), adopter-owned (never written; a missing one is reported), shared
+  (`.claude/settings.json`, the CI workflow, `.gitignore`, `ops/agent/non-code-paths.txt`) and
+  never shipped (`ops/test-kit.sh`, `install.sh`, `contrib/`, the kit's own documents). A shared
+  file is overwritten only when it still equals the kit's copy at the old version; otherwise the
+  kit's copy goes beside it as `<path>.kit-new` with a diff, and the check fails until a human
+  merges it. Why: adopters patch these files on purpose, and a merge done by a script is a merge
+  nobody reviewed. Rejected: three-way merging; overwriting with a backup; an init mode for new
+  repositories (the template already covers them).
+- 2026-10-07: The installed version is stamped in `ops/agent/KIT_VERSION` (`git describe` output)
+  and is the default `--from` of the next update; the check prints it and never fails on its
+  absence. It sits under `ops/agent/` so the gate and the deny rules protect it. A dirty kit
+  checkout is stamped `-dirty` rather than refused, so the self-test can run from a working tree;
+  the suffix is dropped when the stamp is read, which can only produce extra sidecars.
+- 2026-10-07: `ops/test-kit.sh` is never shipped to adopters, and the first-adoption finding that it
+  cannot run there is closed by that rather than by making it portable. The self-test moves to
+  `.github/workflows/kit-self-test.yml`, which only the kit runs; the shipped `agent-kit.yml`
+  becomes the workflow the first adopters proved: range rules on pull requests only, not for
+  Dependabot. Why: the self-test tests the kit's scripts, which adopters consume but do not
+  develop. Rejected: an allowlist rewrite of `fresh_copy` (work for a test no adopter needs).
+- 2026-10-07: Committed kit files name adopters by role, never by repository name, and do not point
+  at the local, excluded `FEEDBACK.md`; findings are restated in ROADMAP.md. Why: this repository
+  is public and the adopters are private.
+- 2026-10-07: A ROADMAP finding is ready when it names where it was seen, the symptom, the evidence
+  and a self-test case, written first as a `known_failure` in `ops/test-kit.sh` that must keep
+  failing; the suite fails once it passes. Findings are triaged before each adopter update. Why:
+  a prose bullet goes stale (four of five first-adoption findings sat untracked through 2.0), a red
+  case does not, and it applies the kit's own "a fix needs a test that failed first" rule to the
+  kit. Rejected: GitHub issues (this repository is public and the adopters are private); skipped
+  tests (they pass silently once fixed and are never promoted).
+- 2026-10-07: The rollout runs from the cheapest mistake to the most expensive: the notes vault, then
+  a TypeScript application that has no kit yet, then the 2.2 fixes, then the docs-only repository
+  halfway through its first implementation, then the production application of the first adoption.
+  Why: the maintainer's call; each run is a test, and the two near-greenfield repositories absorb
+  the first mistakes. The fixes land before the two repositories that carry real work. Replaces the
+  order in the 2.1 ROADMAP draft (docs-only repository first).
