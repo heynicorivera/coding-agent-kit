@@ -32,6 +32,15 @@ p.write_text(text.replace(old, new, 1))
 PY
 }
 
+status_add() {  # status_add <dir> <line>: add a line to STATUS.md, dropping a blank one: no growth
+  python3 - "$1/docs/agent/STATUS.md" "$2" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); lines = p.read_text().splitlines()
+lines.remove("")
+p.write_text("\n".join(lines + [sys.argv[2]]) + "\n")
+PY
+}
+
 fresh_copy() {  # fresh_copy <name> -> path of a configured kit copy with one commit
   local dir="$work/$1"
   mkdir -p "$dir"
@@ -157,8 +166,8 @@ check_expect ok "untested configs pass the check once copied to the root" "$d"
 edit "$d/.codex/hooks.json" '"timeout": 3 }' '"timeout": 10 }'; check_expect fail "Codex SessionEnd timeout over 3 s" "$d"
 d="$(fresh_copy unconfigured)"; edit "$d/ops/verify.sh" "$configured" $'# KIT-PLACEHOLDER restored\ntrue'
 check_expect fail "verify.sh unconfigured on a filled project" "$d"
-d="$(fresh_copy cred)"; echo "token: ghp_$(printf 'a%.0s' {1..36})" >> "$d/docs/agent/STATUS.md"; check_expect fail "credential pattern" "$d"
-d="$(fresh_copy stale)"; echo '- see `src/nowhere/missing.py`' >> "$d/docs/agent/STATUS.md"; check_expect fail "stale path reference" "$d"
+d="$(fresh_copy cred)"; status_add "$d" "token: ghp_$(printf 'a%.0s' {1..36})"; check_expect fail "credential pattern" "$d"
+d="$(fresh_copy stale)"; status_add "$d" '- see `src/nowhere/missing.py`'; check_expect fail "stale path reference" "$d"
 d="$(fresh_copy noverif)"; python3 - "$d/docs/agent/STATUS.md" <<'PY'
 import re, sys, pathlib
 p = pathlib.Path(sys.argv[1]); p.write_text(re.sub(r"^verification:", "checked:", p.read_text(), flags=re.M))
@@ -176,7 +185,7 @@ d="$(fresh_copy fresh)"; mkdir -p "$d/src"; echo x > "$d/src/a.txt"; commit_in "
 check_expect fail "code changed without STATUS.md in range" "$d" --range HEAD~1..HEAD
 d="$(fresh_copy wip)"; mkdir -p "$d/src"; echo x > "$d/src/a.txt"; commit_in "$d" "wip: scratch"
 check_expect ok "wip commit exempt from freshness" "$d" --range HEAD~1..HEAD
-d="$(fresh_copy freshok)"; mkdir -p "$d/src"; echo x > "$d/src/a.txt"; echo "- note" >> "$d/docs/agent/STATUS.md"; commit_in "$d" "feat: with status"
+d="$(fresh_copy freshok)"; mkdir -p "$d/src"; echo x > "$d/src/a.txt"; status_add "$d" "- note"; commit_in "$d" "feat: with status"
 check_expect ok "code and STATUS.md changed together" "$d" --range HEAD~1..HEAD
 d="$(fresh_copy readme)"; echo "more" >> "$d/README.md"; commit_in "$d" "docs: readme"
 check_expect ok "README-only push needs no STATUS.md" "$d" --range HEAD~1..HEAD
@@ -277,7 +286,7 @@ if [ "$rc" -eq 0 ] && grep -q 'not configured' <<<"$err"; then ok "verify.sh unc
 d="$(fresh_copy docsonly)"; touch "$d/fail-verify"; commit_in "$d" "chore: failing at base"; start "$d"
 echo "more" >> "$d/README.md"; claims_done "$d"; allowed "README-only edit does not run verify"
 d="$(fresh_copy pulled)"; start "$d"; up="$work/pulled-upstream"; git clone -q "$d" "$up"
-mkdir -p "$up/src"; echo x > "$up/src/new.txt"; echo "- src/new.txt added" >> "$up/docs/agent/STATUS.md"
+mkdir -p "$up/src"; echo x > "$up/src/new.txt"; status_add "$up" "- src/new.txt added"
 commit_in "$up" "feat: code with its STATUS.md"; git -C "$d" pull -q --ff-only "$up" main
 touch -t 202001010000 "$d/docs/agent/STATUS.md"  # checkout wrote docs/ before src/
 quiet_claim() { claims_done "$1"; [ "$rc" -eq 0 ]; }
