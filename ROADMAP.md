@@ -30,6 +30,25 @@ Findings are triaged before each adopter update.
     `head -40` in `session-start.sh`.
     Test: known failures "the check refuses a 21st active learning" and "a 41st active learning
     is injected or refused" in `ops/test-kit.sh`.
+  - A sidecar re-adds what an adopter removed on purpose.
+    Seen: notes-vault update, dry run and a rehearsal on a clone, 2026-10-08.
+    Symptom: the `.kit-new` sidecar is the kit's whole file and the report a two-way diff (local
+    against the kit's), so it cannot tell the kit's changes since `--from` from the adopter's own
+    edits. The vault's diff showed a session-end hook and three deny rules it had removed by a
+    recorded decision as kit lines, and its own deny rule and gate switch as removals; the kit's
+    only change since v1.0.0 was 13 deny rules. Taking the kit's side would undo that decision.
+    Evidence: `sync_one_shared` in `install.sh` writes the kit's file as the sidecar and diffs
+    local against it, although `old_copy` already holds the base; `git merge-file` with the
+    v1.0.0 copy as the base gave the right merge with one conflict.
+    Test: known failure "install sidecar keeps a hook the adopter removed" in `ops/test-kit.sh`;
+    the case "install writes a sidecar: kit copy beside it" changes with the fix.
+  - The closing steps assume a remote.
+    Seen: notes-vault update, 2026-10-08.
+    Symptom: the report always ends with "commit on a branch, open a pull request", also in a
+    repository without a remote (the vault has none) and after a run that wrote nothing.
+    Evidence: the fixed `echo` at the end of `report_steps` in `install.sh`.
+    Test: known failure "install closing steps fit a repository without a remote" in
+    `ops/test-kit.sh`.
   - The STATUS freshness rule fails bot commits and lockfile-only changes
     (`check_status_freshness` in `ops/check-agent-kit.sh`). The workflow half shipped in 2.1.
   - Stale references are judged by the disk, not git, so a backticked ignored path such as a
