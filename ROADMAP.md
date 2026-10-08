@@ -49,6 +49,22 @@ Findings are triaged before each adopter update.
     Evidence: the fixed `echo` at the end of `report_steps` in `install.sh`.
     Test: known failure "install closing steps fit a repository without a remote" in
     `ops/test-kit.sh`.
+  - The AGENTS.md step assumes the kit's rule order.
+    Seen: notes-vault update, 2026-10-08.
+    Symptom: an update from before v2.0 says "make rules 1-3 say what the kit's say". The vault
+    keeps its own seven rules (rule 1 protects its corpus, rule 2 is about its owner), so taken
+    literally the step overwrites both; its rules 3 and 4 already carry the kit's rules 1 and 2.
+    Evidence: the fixed `echo` under `before_v2` in `report_steps` in `install.sh`.
+    Test: known failure "install AGENTS.md step fits an adopter with its own rules" in
+    `ops/test-kit.sh`.
+  - The STATUS nudge fires after a pull.
+    Seen: this repository, a session that pulled the two merged pull requests, 2026-10-08.
+    Symptom: a pull that brings code and its STATUS.md in one commit still asks for a STATUS
+    rewrite: freshness compares file times, and checkout wrote `docs/agent/STATUS.md` 1.6 ms
+    before `ops/test-kit.sh`, because it writes in path order.
+    Evidence: `status_is_stale` in `ops/agent/stop_gate.py` compares `st_mtime`.
+    Test: known failure "a pull that brings code with its STATUS.md does not nudge" in
+    `ops/test-kit.sh`.
   - The STATUS freshness rule fails bot commits and lockfile-only changes
     (`check_status_freshness` in `ops/check-agent-kit.sh`). The workflow half shipped in 2.1.
   - Stale references are judged by the disk, not git, so a backticked ignored path such as a

@@ -3,40 +3,40 @@
      Under 60 lines. Every claim names its evidence. No secrets, no personal data. -->
 
 updated: 2026-10-08 · commit: the commit that contains this file, on branch
-`vault-rollout-findings`, stacked on `status-after-v2-1` (pull request #4) off `main` at d217eab
+`record-vault-update` off `main` at a50f57d
 verification: verified — command: `./ops/verify.sh` (exit 0, "OK: agent kit checks passed") and
-`./ops/test-kit.sh` (117 passed, 0 failed, 4 known failures) — at: 2026-10-08, uncommitted tree
+`./ops/test-kit.sh` (117 passed, 0 failed, 6 known failures) — at: 2026-10-08, uncommitted tree
 
 ## Now
-- 2.1 is released: pull request #3 merged as d217eab, tag `v2.1.0` points at it, and both
-  workflows (agent-kit, kit-self-test) passed on it (`gh run list --branch main`)
-- In progress: the notes-vault update (rollout step 1). A `kit-update` branch exists there, no
-  agent session is open in it, and the dry run is read. A rehearsal on a clone passed: after the
-  merge its verify printed both OKs, and a second run wrote nothing. Waits for the maintainer's
-  real run
-- The vault's settings must be merged three-way (base: the v1.0.0 copy): its 2026-10-04 decision
-  left out the session-end hook, which the two-way sidecar diff shows as a kit line
+- 2.1 is released: d217eab, tag `v2.1.0`. Pull requests #4 and #5 merged as d9ee6d5 and a50f57d;
+  both workflows passed on each (`gh run list --branch main`)
+- The notes vault runs kit v2.1.0: committed on its `kit-update` branch, stamp v2.1.0, its own
+  verify passes (both OKs), and a dry run has nothing left to write. Its Claude and Codex configs
+  were merged three-way to keep its 2026-10-04 decisions (no session-end hook, nudges off)
+- Waits for a session in the vault: its AGENTS.md (keep its seven rules, add `.githooks/` to its
+  never-change rule, no change-file rule), STATUS and DECISIONS; the maintainer commits there
+- This branch is committed locally, not pushed: it opens as a pull request after the vault
+  session, with anything that session finds
 - Expected here, not a to-do: this repository's `ops/verify.sh` keeps its KIT-PLACEHOLDER block
   and AGENTS.md its 6 placeholders, so the kit check prints two TODO lines. This repository is the
   template adopters copy (DECISIONS.md, 2026-09-28); `./ops/test-kit.sh` is its real suite
 
 ## Last session
-- 2026-10-08: confirmed the merge, the re-tag and CI on main; refreshed this file (#4); ran the
-  vault dry run and rehearsal; recorded two install.sh findings as known failures and ROADMAP
-  entries, each reverse-checked (change file
-  `docs/agent/changes/archive/2026-10-08-vault-rollout-findings.md`)
+- 2026-10-08: refreshed this file (#4); the vault dry run, a rehearsal on a clone, and the
+  maintainer's real run; four findings recorded as known failures and ROADMAP entries, each
+  reverse-checked: sidecar and closing steps (#5), the AGENTS.md step and the STATUS nudge after a
+  pull (this branch; change file
+  `docs/agent/changes/archive/2026-10-08-vault-update-findings.md`)
 - 2026-10-07: added `install.sh` (custody table, `.kit-new` sidecars, a KIT_VERSION stamp,
   `--dry-run`, `--from`), 25 self-test cases, the CI split, CHANGELOG 2.1.0; recorded the
   learnings-cap defect as two known failures
 
 ## Next
-1. Maintainer: merge #4, then this branch's pull request
-2. Maintainer: the real vault run (install, apply the reviewed merged settings and Codex config,
-   delete the sidecar, enable the pre-commit gate, verify, commit on `kit-update`)
-3. A new agent session in the vault: AGENTS.md rules 1-3 against the kit's (decide whether the
-   change-file rule fits a vault where "a capture is not a code change"), STATUS and DECISIONS
-4. Record anything the real run adds in ROADMAP.md, then the TypeScript application onboarding
-5. The 2.2 fixes in ROADMAP.md (8 entries, 3 with known-failure tests), then the last two
+1. Maintainer: the vault session (prompt given), commit there, then merge `kit-update` into the
+   vault's main locally (it has no remote)
+2. Push this branch and open its pull request; maintainer merges
+3. The TypeScript application with no kit yet: the first onboarding with `docs/agent/ONBOARD.md`
+4. The 2.2 fixes in ROADMAP.md (10 entries, 5 with known-failure tests), then the last two
    adopters on 2.2
 
 ## Open questions (need a human)

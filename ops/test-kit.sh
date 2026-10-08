@@ -271,6 +271,12 @@ echo x > "$d/new.txt"; gate "$d" claude '{}'
 if [ "$rc" -eq 0 ] && grep -q 'not configured' <<<"$err"; then ok "verify.sh unconfigured at the base skips the test gate"; else bad "unconfigured verify.sh skips (rc $rc: $err)"; fi
 d="$(fresh_copy docsonly)"; touch "$d/fail-verify"; commit_in "$d" "chore: failing at base"; start "$d"
 echo "more" >> "$d/README.md"; claims_done "$d"; allowed "README-only edit does not run verify"
+d="$(fresh_copy pulled)"; start "$d"; up="$work/pulled-upstream"; git clone -q "$d" "$up"
+mkdir -p "$up/src"; echo x > "$up/src/new.txt"; echo "- src/new.txt added" >> "$up/docs/agent/STATUS.md"
+commit_in "$up" "feat: code with its STATUS.md"; git -C "$d" pull -q --ff-only "$up" main
+touch -t 202001010000 "$d/docs/agent/STATUS.md"  # checkout wrote docs/ before src/
+quiet_claim() { claims_done "$1"; [ "$rc" -eq 0 ]; }
+known_failure "a pull that brings code with its STATUS.md does not nudge" quiet_claim "$d"
 
 echo "== stop gate bypass probes =="
 d="$(fresh_copy b1)"; start "$d"; failing_commit "$d"
@@ -406,6 +412,7 @@ hook_stays_out() {  # hook_stays_out <dir>: neither settings nor a sidecar bring
     && ! grep -qsF '"SessionEnd"' "$1/.claude/settings.json" "$1/.claude/settings.json.kit-new"
 }
 no_pull_request_step() { [ "$rc" -eq 0 ] && ! says "open a pull request"; }
+own_rules_respected() { [ "$rc" -eq 0 ] && ! says "make rules 1-3 say what the kit's say"; }
 
 if git -C "$kit" rev-parse -q --verify 'v1.0.0^{commit}' >/dev/null; then
   d="$(v1_adopter upd)"; install_run "$d" --from v1.0.0
@@ -471,6 +478,18 @@ PY
 
   d="$(v1_adopter noremote)"; install_run "$d" --from v1.0.0
   known_failure "install closing steps fit a repository without a remote" no_pull_request_step
+
+  d="$(v1_adopter ownrules)"
+  python3 - "$d/AGENTS.md" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+t, n = re.subn(r"^1\. .*?(?=^2\. )", "1. Notes are append-only: add files, never edit one.\n",
+               p.read_text(), count=1, flags=re.M | re.S)
+assert n == 1, "rule 1 not found"
+p.write_text(t)
+PY
+  commit_in "$d" "put our own rule first"; install_run "$d" --from v1.0.0
+  known_failure "install AGENTS.md step fits an adopter with its own rules" own_rules_respected
 else
   echo "skip install.sh cases: tag v1.0.0 is not in this clone (fetch tags to run them)"
 fi
