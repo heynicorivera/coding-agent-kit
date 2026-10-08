@@ -10,6 +10,22 @@ and fails it once the fix lands, which is the signal to make it a normal case an
 Findings are triaged before each adopter update.
 
 ## Next
+- **An OpenSpec-style change flow, before the rollout continues.** Each step of a change becomes a
+  command an agent runs, on the change file and archive the kit already has:
+  1. Branch: each change starts on a new branch from `main`.
+  2. Explore (optional): think an idea through; it writes nothing.
+  3. Propose: write `docs/agent/changes/<name>.md` from the template (intent, tier, acceptance,
+     tasks; for T2 also design and spec delta) and stop before any code.
+  4. Review: the maintainer reads it, and an update command revises it. A T2 change waits for
+     the maintainer's "approved" before anything is built.
+  5. Apply, then archive: build it and run `./ops/verify.sh`; `./ops/agent/changes.py archive`
+     folds the spec delta into `docs/agent/specs/`; then the pull request as usual.
+  Open: commands for Claude Code (`.claude/commands/`) and a prompt form for the other tools;
+  install.sh custody for the new files; the kit's single change file or OpenSpec's
+  `openspec/changes/<name>/` layout. The OpenSpec CLI itself would add a Node dependency to a kit
+  that needs only bash, git and python3.
+  Done when: a change in this repository runs explore, propose, approve, apply and archive with
+  the commands, and the self-test covers the shipped command files.
 - **Roll the kit out to four repositories, one at a time, cheapest mistake first.** Each run is a
   test; record its surprises here before the next one starts.
   1. A notes vault with a reduced v1.0 kit: an update with `install.sh`, the first with a patched

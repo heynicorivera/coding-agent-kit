@@ -36,7 +36,8 @@ the code. Max 7 rules.
 - <e.g. "All HTTP handlers return errors through src/errors, never raw exceptions">
 
 ## Git
-- Imperative subject ≤ 72 characters, one change per commit.
+- Imperative subject ≤ 72 characters, one change per commit. Never push directly to `main`: every
+  change goes through a branch and a pull request.
 - Records only (every changed path is in `ops/agent/non-code-paths.txt`): at wrap-up, once
-  `./ops/verify.sh` passes, commit and push to `main`. Anything else: a branch and a pull request,
-  never a push to `main`.
+  `./ops/verify.sh` passes, title the pull request "Records: …" and merge it yourself when CI
+  passes. Anything else waits for the maintainer's merge.
