@@ -204,3 +204,7 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   STATUS is rewritten several times a day (three committed versions on 2026-10-08, all dated
   alike); the logs are append-only, so their order shows the sequence and git keeps exact times.
   Rejected: times in every record (longer entries, no decision depends on the hour).
+- 2026-10-08: An OpenSpec-style change flow (commands for explore, propose, update, apply and
+  archive; a T2 change waits for the maintainer's "approved") is built before the notes-vault
+  follow-up and the rest of the rollout. Why: the maintainer's call; adopters then receive the flow
+  with their next update instead of in a second one.
