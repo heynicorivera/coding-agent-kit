@@ -3,40 +3,40 @@
      Under 60 lines. Every claim names its evidence. No secrets, no personal data. Times in
      `updated:` and `at:` come from `date '+%Y-%m-%d %H:%M %Z'`, never from memory. -->
 
-updated: 2026-10-08 16:31 CEST · commit: the commit that contains this file, on branch
-`records-via-pull-request` off `main` at a1578ef
+updated: 2026-10-08 18:06 CEST · commit: the commit that contains this file, a records-only
+pull request off `main` at 6ece6e7
 verification: verified — command: `./ops/verify.sh` (exit 0, "OK: agent kit checks passed") and
-`./ops/test-kit.sh` (118 passed, 0 failed, 6 known failures) — at: 2026-10-08 16:31 CEST,
-uncommitted tree
+`./ops/test-kit.sh` (118 passed, 0 failed, 6 known failures) — at: 2026-10-08 18:06 CEST, 6ece6e7
 
 ## Now
-- `main` is at a1578ef: #6 (two more rollout findings as known failures) and #7 (records at
-  wrap-up; times in STATUS.md) merged; CI passed on both pull requests
-- This branch: a records-only change goes through a pull request titled "Records: …" that the
-  agent merges once CI passes, replacing #7's direct push, which the maintainer's push-to-main
-  hook blocked (AGENTS.md, Git; DECISIONS.md, 2026-10-08). It also plans the OpenSpec-style flow
-  (ROADMAP Next), and self-test cases now add to STATUS.md without growing it: four appended a
-  line and broke, or passed for the wrong reason, with this file at its 60-line cap
-- The maintainer's global Claude instructions still carry today's direct-push exception; it is no
-  longer needed and is reverted by hand (CLAUDE.md files are protected)
-- The notes vault runs kit v2.1.0 on its `kit-update` branch (stamp v2.1.0, its verify passes);
-  its own session (AGENTS.md, STATUS, DECISIONS) waits until after the OpenSpec-style flow
+- `main` is at 6ece6e7; pull requests #4 to #8 merged on 2026-10-08, CI passed on each
+- The rules now: every change goes through a pull request; a records-only one is titled
+  "Records: …" and the agent merges it once CI passes, anything else waits for the maintainer
+  (AGENTS.md, Git). STATUS.md times come from the clock
+- Rule gap found at wrap-up: LEARNINGS.md needs a human to accept each learning, but as a record
+  the agent would merge it itself. No learning was added (Next 1)
+- The notes vault runs kit v2.1.0, committed on its `kit-update` branch (bd0ece4): stamp v2.1.0,
+  its verify passes, a dry run has nothing left to write. Its own session waits (Next 3)
 - Expected here, not a to-do: this repository's `ops/verify.sh` keeps its KIT-PLACEHOLDER block
   and AGENTS.md its 6 placeholders, so the kit check prints two TODO lines. This repository is the
   template adopters copy (DECISIONS.md, 2026-09-28); `./ops/test-kit.sh` is its real suite
 
 ## Last session
-- 2026-10-08: #4 to #7 merged. The vault update: dry run, a rehearsal on a clone, the
-  maintainer's real run. Four rollout findings as known failures, each reverse-checked (#5, #6).
-  Records at wrap-up and STATUS times (#7), then records through self-merged pull requests
+- 2026-10-08: STATUS refresh (#4). Vault update: dry run, rehearsal on a clone, real run (settings
+  merged three-way to keep its 2026-10-04 decisions). Four rollout findings as known failures
+  (#5, #6). Records rule and STATUS times (#7), then self-merged records pull requests (#8; the
+  push-to-main hook blocked direct pushes) with a self-test cap fix; OpenSpec-style flow planned
 - 2026-10-07: added `install.sh`, 25 self-test cases, the CI split, CHANGELOG 2.1.0
 
 ## Next
-1. Maintainer: merge this branch's pull request; revert the global direct-push exception
+1. Close the rule gap: keep LEARNINGS.md out of self-merged records, or say what accepts a
+   learning. Then propose: "check the maintainer's global hooks before a rule that pushes or edits
+   instruction files" (evidence: #7 replaced by #8; a blocked CLAUDE.md edit the same day)
 2. Design, then build, the OpenSpec-style change flow (ROADMAP Next): decisions first (layout,
-   commands, tools), then a branch and a pull request
-3. Maintainer: the vault session (prompt given), commit there, then merge `kit-update` into the
-   vault's main locally (it has no remote)
+   command names, which tools), then a branch and a pull request
+3. Maintainer: a vault session: keep its seven rules, add `.githooks/` and "fix an inherited
+   verify failure first" to its rule 3, no change-file rule; DECISIONS entry, STATUS rewrite;
+   then the maintainer commits and merges `kit-update` into its main locally (no remote)
 4. The TypeScript application with no kit yet: the first onboarding with `docs/agent/ONBOARD.md`
 5. The 2.2 fixes in ROADMAP.md (10 entries, 5 with known-failure tests), then the last two
    adopters on 2.2
