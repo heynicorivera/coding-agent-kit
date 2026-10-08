@@ -208,3 +208,10 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   archive; a T2 change waits for the maintainer's "approved") is built before the notes-vault
   follow-up and the rest of the rollout. Why: the maintainer's call; adopters then receive the flow
   with their next update instead of in a second one.
+- 2026-10-08: A records-only change goes through a pull request titled "Records: …" that the agent
+  merges once CI passes, not a push to `main`. Replaces the direct push decided earlier the same
+  day. Why: the maintainer's hook blocks every push to `main`, and CI's range rules (DECISIONS
+  append-only, STATUS freshness) run on pull requests only, so a pull request guards records
+  better; the maintainer still clicks nothing. Rejected: relaxing the hook (a global guardrail
+  loosened for one kit, and direct pushes skip the range rules); the maintainer pushing records
+  (a step per session).
