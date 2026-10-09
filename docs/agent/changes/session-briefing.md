@@ -10,7 +10,7 @@ status: open
 ## Intent
 The maintainer sees, before typing anything, what the last session did, what comes next and what
 needs them, in 3-5 one-line bullets per section, each pointing at a file or pull request with more
-context, copied from STATUS.md as written (built after `docs/agent/changes/add-skills.md`).
+context, copied from STATUS.md as written (add-skills shipped first, on 2026-10-09).
 
 ## Tier
 T2 · schema: the STATUS.md shape changes for every adopter, plus the session-start hook, the Claude Code hook config and the check
@@ -25,7 +25,9 @@ T2 · schema: the STATUS.md shape changes for every adopter, plus the session-st
 - Given an adopter updated by install.sh, when the report prints, then its STATUS.md step names the new shape · test: `ops/test-kit.sh::install report names the briefing shape`
 
 ## Tasks
-- [ ] Branch `session-briefing` from `main` once add-skills is merged, in a separate worktree
+- [ ] Spike, in a throwaway worktree that is not merged: a minimal `--format claude` output with `systemMessage`, tried in Claude Code (terminal) and in a Zed Claude thread; record what each shows
+- [ ] With the spike result, settle the open questions in Design (Review of 2026-10-09) with the maintainer; then "approved"
+- [ ] Branch `session-briefing` from `main` in a separate worktree (the hook and the check are gate files)
 - [ ] `ops/agent/session-start.sh --format claude`: JSON with `systemMessage` and `additionalContext`
 - [ ] `.claude/settings.json`: the SessionStart hook passes `--format claude`
 - [ ] `check_memory_files`: the three sections, bullet counts, one line of at most 100 characters, a path or URL in each
@@ -92,6 +94,28 @@ T2 · schema: the STATUS.md shape changes for every adopter, plus the session-st
   (R7) already catch for code changes. Found at the 2026-10-09 wrap-up: the self-test copies the
   kit without `research/`, so a backticked research path in STATUS.md failed 8 cases; the check
   must accept a plain path there, or the bullet must point at a file that ships.
+- Review of 2026-10-09, open until the maintainer settles it. Read against the merged skills change,
+  the Claude Code hooks documentation (code.claude.com/docs/en/hooks) and the Claude adapter that
+  Zed runs (`claude-agent-acp` 0.88.0, read from its installed source):
+  1. The briefing may not be displayed, and the design would then hide the failure. The hooks page
+     calls `systemMessage` a "warning message shown to the user" but does not say that a
+     SessionStart one is displayed. The Zed adapter ignores `hook_response` and passes on only SDK
+     `informational` messages; with notice support it drops the `info` level. If the briefing is
+     not shown, the line that tells the agent "the user has seen it" leaves the maintainer with no
+     briefing at all. The first-reply briefing from the STATUS.md header works in both tools today.
+     Recommended: the spike first; send that line only for a client where display is confirmed, or
+     keep the first-reply briefing for every tool and ship only the shape and its check.
+  2. The SessionStart matcher in `.claude/settings.json` lacks `fork`, a source the hooks page
+     lists since Claude Code 2.1.214 (`/branch`, `/fork`, `--fork-session`): such sessions get no
+     STATUS.md injection and no session base. From the documentation, not tested here.
+     Recommended: add `fork` to the matcher in this change, with a case that fails without it.
+  3. Which sources show the briefing is not decided. Recommended: startup, resume, clear and fork,
+     not compact, so a mid-session compaction does not announce it again.
+  4. A bullet that points at `research/` cannot pass the check in the self-test's copy of the kit
+     (no `research/`), and "path" is not defined: `ROADMAP.md` has no slash, so
+     `check_stale_references` never checks that it exists. Recommended: bullets point at files that
+     ship; a path is a backticked token with a slash or a file extension, and the new check
+     verifies that it exists.
 
 ## Spec delta
 spec: docs/agent/specs/briefing.md

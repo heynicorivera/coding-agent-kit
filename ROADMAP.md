@@ -12,6 +12,8 @@ Findings are triaged before each adopter update.
 ## Next
 - **A session-start briefing.** Last session, Next and Needs you, copied from STATUS.md and shown
   before the maintainer types anything. Planned in `docs/agent/changes/session-briefing.md` (T2).
+  A review on 2026-10-09 found that display in Zed is unverified, so a spike in terminal Claude Code
+  and in Zed comes first; the change file lists the questions to settle before approval.
 - **An OpenSpec-style change flow, before the rollout continues.** Each step of a change becomes a
   command an agent runs, on the change file and archive the kit already has. The commands ship as
   `kit-` skills in the skills folder (DECISIONS.md, 2026-10-09): its check and install.sh custody
