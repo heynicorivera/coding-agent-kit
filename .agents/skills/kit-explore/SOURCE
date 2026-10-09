@@ -1,0 +1,8 @@
+url: https://github.com/mattpocock/skills
+path: skills/productivity/grill-me
+path: skills/productivity/grilling
+commit: b0618bc436ad893b3c5e84e55fba86586d34a404
+license: MIT
+changed: SKILL.md: grill-me's frontmatter, name grill-me -> kit-explore
+changed: SKILL.md: grill-me's body (a call to the grilling skill) replaced by grilling's body
+changed: agents/openai.yaml: grill-me's; grilling's is not copied
