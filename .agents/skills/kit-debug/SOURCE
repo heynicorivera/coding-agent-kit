@@ -1,0 +1,10 @@
+url: https://github.com/obra/superpowers
+path: skills/systematic-debugging
+commit: 8ca22dba9a94f28898bbce59f2537ff4d87c747d
+license: MIT
+changed: SKILL.md:2: name systematic-debugging -> kit-debug
+changed: SKILL.md:177: points at AGENTS.md rule 3 instead of superpowers:test-driven-development
+changed: SKILL.md:189: points at ./ops/verify.sh instead of superpowers:verification-before-completion
+changed: root-cause-tracing.md:101-107: describes the bisection without find-polluter.sh
+changed: condition-based-waiting.md:82-83: drops the reference to condition-based-waiting-example.ts
+changed: not copied: CREATION-LOG.md, condition-based-waiting-example.ts, find-polluter.sh, test-academic.md, test-pressure-1.md, test-pressure-2.md, test-pressure-3.md

@@ -61,14 +61,17 @@ tool allows it; prose is the fallback, not the mechanism.
   kit cannot ship one honestly. Projects add one when they need it.
 - A specs/plans tree. Plans help when good and reminded and "a subpar plan hurts performance even
   more than no plan at all" (2604.12147); plan files appear in 10 of 36,710 repositories (2608.04661).
-- Per-tool skills, rules directories, subagents: no shared format; skills are mostly static text.
+- Per-tool rules directories and subagents: no shared format. Skills left this list on 2026-10-09:
+  the Agent Skills format (agentskills.io) is read by Claude Code, Zed, Codex, Copilot, Cursor and
+  Gemini CLI, so the kit ships two vetted ones (R20) and adopters add their own.
 - Automatic memory capture or LLM-written summaries as memory (see §1, third row).
 - LLM-judged checks. Every check in the kit is deterministic.
 - Hooks for Gemini CLI and Antigravity CLI: their hook handler field names are not documented in
   the pages opened; the kit ships nothing it cannot validate.
 - Merge rules for two writers of STATUS.md at once: single writer assumed.
 - Making the agent correct. Context files do not raise task success (2602.11988, 2607.27250); the
-  kit makes work verifiable and memory current, not the model smarter.
+  kit makes work verifiable and memory current, not the model smarter. `kit-debug` gives the agent
+  a debugging method; the kit claims no effect on task success from it (none was measured).
 
 ## 4. Requirements
 
@@ -96,6 +99,7 @@ Check names refer to functions in `ops/check-agent-kit.sh`; "test-kit" refers to
 | R18 | Intent before code: AGENTS.md rule 3 classifies each change after reading the code (T0 trivial: verify only; T1 feature or fix: a change file before code, and a fix needs a test that failed before it; T2 schema, auth, payments, cross-module: T1 plus Design and Spec delta sections; unsure: higher tier). A change file in `docs/agent/changes/` (from `_template.md`) has `status: open|closed` and the sections Intent, Tier, Acceptance (Given/When/Then, each naming a `test:` path), Tasks, Out of scope, Evidence. The check fails a missing section or status, an acceptance line without a test, a T2 change without Design and Spec delta, and a closed change whose test file is missing, whose tasks are unticked, whose Evidence lacks `verification: verified`, or, for `T1 fix`, lacks `failed first:`; a closed change left in `docs/agent/changes/` fails until it is archived. The gate nudges once per change set, on a completion claim, when more than 3 code files or 50 lines changed and no change file was touched, or when a touched change file is still open | `AGENTS.md`, `docs/agent/changes/_template.md`, `ops/agent/changes.py`, `ops/agent/stop_gate.py`, `ops/check-agent-kit.sh` | `check_change_files` (runs `ops/agent/changes.py check`); gate; test-kit | OpenSpec (change proposals); BMAD (tier after investigation); Spec Kit (acceptance scenarios; no fix without a test that failed first) |
 | R19 | Living specs and brownfield: `docs/agent/specs/<domain>.md` holds one requirement per line with an ID like `AUTH-1`, unique per file, written only for the area about to change. `ops/agent/changes.py archive <change>` refuses a change that is not closed or fails R18, merges its Spec delta (ADDED: new ID appended; MODIFIED: replaces the line with that ID; REMOVED: deletes it; nothing written on conflict) and moves the file to `docs/agent/changes/archive/<date>-<name>.md`. The check prints advisory `GAP:` lines for open changes whose acceptance tests do not exist or are unchanged since the push base or upstream merge-base. `docs/agent/ONBOARD.md` fills AGENTS.md from repository evidence, proposes `ops/verify.sh` for the human and writes specs only for the first area to change | `docs/agent/specs/_template.md`, `ops/agent/changes.py`, `docs/agent/ONBOARD.md` | `check_change_files`; test-kit | OpenSpec (delta specs, archive step); audit items 3.1–3.3 |
 | R17 | The check reports remaining placeholders (`TODO:` lines for `<…>` in AGENTS.md and the verify.sh block) without failing, so an adopter sees what is left | `ops/check-agent-kit.sh` | `report_todos` | usability (kit choice) |
+| R20 | Skills: each skill sits directly in `.agents/skills/<name>/` with a `SKILL.md` whose frontmatter the check can read (plain, quoted or block-scalar values), whose name has 1-64 lowercase letters, digits and single hyphens and equals its folder, and whose description has 1-1024 characters; a relative link `.claude/skills/<name>` leads to it, and no link there dangles. A copied skill (`SOURCE` present) names its URL, 40-hex commit and licence in `SOURCE`, carries the upstream `LICENSE`, has no executable file and no frontmatter key outside the Agent Skills fields. The kit ships `kit-explore` (runs only when typed) and `kit-debug`; `install.sh` owns every `kit-` folder and its link, and reports a real directory where a link belongs | `.agents/skills/`, `.claude/skills/`, `install.sh` | `check_skills`; test-kit | agentskills.io specification; code.claude.com/docs/en/skills; zed.dev/docs/ai/skills; `research/skills-addons-proposal.md` |
 
 ## 5. Acceptance criteria
 

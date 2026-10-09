@@ -5,7 +5,7 @@
      ./ops/agent/changes.py archive docs/agent/changes/<short-name>.md, which merges the Spec delta
      and moves this file to archive/. ops/check-agent-kit.sh checks the shape.
      No secrets, no personal data. -->
-status: open
+status: closed
 
 ## Intent
 The kit ships two copied, pinned and licensed skills in `.agents/skills/`, `/kit-explore` (Pocock's
@@ -31,17 +31,17 @@ T2 · cross-module: a new shipped folder, a check in a gate file, install.sh cus
 - Given a real directory where a kit skill's link belongs, when install.sh runs, then it is left alone and reported · test: `ops/test-kit.sh::install skills keep a real directory`
 
 ## Tasks
-- [ ] Branch `add-skills` from `main` in a separate worktree (the check is a gate file)
-- [ ] `kit-debug`: systematic-debugging from obra/superpowers at 8ca22db; four files, LICENSE, SOURCE
-- [ ] `kit-debug` edits, recorded in SOURCE: the name and four references (proposal, section 4.1)
-- [ ] `kit-explore`: grill-me's frontmatter and `agents/openai.yaml` with grilling's body, from mattpocock/skills at b0618bc; LICENSE, SOURCE
-- [ ] Relative links in `.claude/skills/`, one per skill
-- [ ] Maintainer: pickup test in Claude Code (`/skills`) and Zed (trusted worktree), before the check is written
-- [ ] `check_skills` in `ops/check-agent-kit.sh` (proposal, section 4.2)
-- [ ] `install.sh`: owns every `kit-` skill folder and its link; a real directory reported
-- [ ] `ops/test-kit.sh`: the skills and install cases above; break each rule once
-- [ ] AGENTS.md rule 3 points at `.agents/skills/kit-debug/SKILL.md`
-- [ ] PRD §3 non-goals and R20; README tables and the pickup results; CHANGELOG; DECISIONS; STATUS
+- [x] Branch `add-skills` from `main` in a separate worktree (the check is a gate file)
+- [x] `kit-debug`: systematic-debugging from obra/superpowers at 8ca22db; four files, LICENSE, SOURCE
+- [x] `kit-debug` edits, recorded in SOURCE: the name and four references (proposal, section 4.1)
+- [x] `kit-explore`: grill-me's frontmatter and `agents/openai.yaml` with grilling's body, from mattpocock/skills at b0618bc; LICENSE, SOURCE
+- [x] Relative links in `.claude/skills/`, one per skill
+- [x] Maintainer: pickup test in Claude Code (`/skills`) and Zed (trusted worktree), before the check is written; done 2026-10-09, Zed's built-in agent not tested
+- [x] `check_skills` in `ops/check-agent-kit.sh` (proposal, section 4.2)
+- [x] `install.sh`: owns every `kit-` skill folder and its link; a real directory reported
+- [x] `ops/test-kit.sh`: the skills and install cases above; break each rule once
+- [x] AGENTS.md rule 3 points at `.agents/skills/kit-debug/SKILL.md`
+- [x] PRD §3 non-goals and R20; README tables and the pickup results; CHANGELOG; DECISIONS; STATUS
 
 ## Out of scope
 - The LSP plugins, the ast-grep skills and Ponytail (proposal, section 2)
@@ -52,9 +52,10 @@ T2 · cross-module: a new shipped folder, a check in a gate file, install.sh cus
 - Windows, where git symlinks need extra setup; the kit does not support Windows yet
 
 ## Evidence
-- verification: <verified | partial | failed> — command: `./ops/verify.sh` and `./ops/test-kit.sh` — at: <date>, <commit>
-- last lines: <the last lines of both commands>
-- mutation check: <each broken rule fails at least one skills case>
+- verification: verified — command: `./ops/verify.sh` and `./ops/test-kit.sh` — at: 2026-10-09, uncommitted on add-skills (after 8e725e6)
+- last lines: OK: agent kit checks passed · 153 passed, 0 failed, 6 known failures (ROADMAP Next)
+- mutation check: 23 broken rules, each in a throwaway worktree running the full self-test. At f832adf 22 failed their own skills case and one survived: the bad-name case looked for its text in the whole output, where an advisory GAP line quotes the same phrase. Fixed in 8e725e6 (the helper reads FAIL lines only, which can only fail more cases); rerun at 8e725e6: that case and both renamed link cases failed, and the unbroken baseline passed all 153. The other 20 were not rerun
+- pickup test (maintainer): Claude Code 2.1.286 in the terminal and Claude Code as an agent in Zed 1.23.2 list `kit-debug` and `kit-explore` in a session started in the worktree; Zed's built-in agent not tested
 
 ## Design
 - Names: `kit-` plus the step of the change flow (`kit-explore` now; `kit-propose`, `kit-apply`,
@@ -85,8 +86,8 @@ T2 · cross-module: a new shipped folder, a check in a gate file, install.sh cus
   block-scalar values and fails the rest as unreadable.
 - Custody: `install.sh` owns every `.agents/skills/kit-*` folder and its link, so there is no list
   to keep; adopters name their own skills without the prefix. A missing link is created; a real
-  directory in its place is reported and never replaced. Known limit: a kit skill an adopter
-  deleted returns on the next update.
+  directory in its place is reported and never replaced. Known limits: a kit skill an adopter
+  deleted returns on the next update, and a file dropped from a kit skill upstream stays there.
 - Skills stay code for the gate (not in `ops/agent/non-code-paths.txt`): an edit runs the check,
   and a skill change goes through a pull request the maintainer merges, never a records one. Why:
   skills steer later sessions as learnings do, and learnings need a human's acceptance (PRD R9).
@@ -96,9 +97,10 @@ T2 · cross-module: a new shipped folder, a check in a gate file, install.sh cus
   `check_stale_references` keeps it current.
 - Risks: VS Code lists each skill twice, and Cursor does not document duplicates. Gemini CLI
   ignores `disable-model-invocation` and has no skill commands, so there `kit-explore` starts only
-  when the model picks it. Claude Code's pickup through a link is documented, not yet tested here,
-  so the pickup test comes right after the links: if it fails, the layout changes before the check
-  and install.sh are built on it.
+  when the model picks it. Claude Code's pickup through a link was documented but untested, so the
+  pickup test came right after the links, before the check and install.sh were built on them. It
+  passed on 2026-10-09 (Evidence). A session lists the skills of the folder it starts in: the first
+  two attempts started in the home folder and in the main checkout, which has no skills yet.
 - Sequencing: before the OpenSpec-style flow (maintainer, 2026-10-09; replaces the order decided on
   2026-10-08). The flow's commands then ship as `kit-` skills in this folder with
   `disable-model-invocation`, which answers its open question about a prompt form for other tools.

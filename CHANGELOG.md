@@ -4,7 +4,24 @@ Notable changes to the kit, newest first. Versions are git tags (`v2.0.0`); date
 
 ## Unreleased
 
+### Added
+- Two skills in `.agents/skills/`, each linked from `.claude/skills/` so Claude Code reads the same
+  files: `/kit-explore`, a planning interview that runs only when typed (Matt Pocock's grill-me and
+  grilling at b0618bc, MIT), and `/kit-debug`, a root-cause debugging method (Superpowers'
+  systematic-debugging at 8ca22db, MIT, four of its eleven files). Each carries `SOURCE` (URL,
+  commit, licence, every edit) and the upstream `LICENSE`.
+- `ops/check-agent-kit.sh` checks skills (`check_skills`): each `SKILL.md` directly in its folder,
+  a readable frontmatter, a valid name equal to the folder, a 1-1024-character description, a link
+  in `.claude/skills/` and no dangling one; a copied skill also needs its pin, its licence, no
+  executable file and only Agent Skills frontmatter keys.
+- `install.sh` owns every `.agents/skills/kit-*` folder and its link; a real directory where a link
+  belongs is reported and left alone, and skills without the `kit-` prefix are never touched.
+- The self-test grows from 118 to 153 cases.
+
 ### Changed
+- AGENTS.md rule 3: a fix starts from the root cause (`.agents/skills/kit-debug/SKILL.md`).
+  Existing adopters copy the clause into their own AGENTS.md.
+- PRD §3: skills left the non-goals (R20).
 - AGENTS.md, Git: a records-only change (every path in `ops/agent/non-code-paths.txt`) goes
   through a pull request titled "Records: …" that the agent merges once CI passes; anything else
   waits for the maintainer's merge. Existing adopters copy the lines into their own AGENTS.md.

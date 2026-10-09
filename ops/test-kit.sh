@@ -3,7 +3,8 @@
 # Self-test for the agent kit. Copies the kit into temporary git repositories and proves that the
 # check fails on each broken rule, that the session hooks behave, that the stop gate answers each
 # tool in its documented shape and cannot be skipped by committing first or by changing gate files,
-# that the pre-commit hook refuses failing commits, and that change files are checked and nudged.
+# that the pre-commit hook refuses failing commits, that change files are checked and nudged, that
+# skills are checked, and that install.sh updates an adopter.
 # Exit 1 if any case fails.
 set -euo pipefail
 kit="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,6 +30,18 @@ p = pathlib.Path(path); text = p.read_text()
 if old not in text:
     sys.exit(f"edit: {old!r} not found in {path}")
 p.write_text(text.replace(old, new, 1))
+PY
+}
+
+set_key() {  # set_key <file> <key> [value]: rewrite the first '<key>:' line, or drop it without a value
+  python3 - "$@" <<'PY'
+import re, sys, pathlib
+path, key = pathlib.Path(sys.argv[1]), sys.argv[2]
+line = "%s: %s\n" % (key, sys.argv[3]) if len(sys.argv) > 3 else ""
+text, n = re.subn(r"(?m)^%s:.*\n" % re.escape(key), lambda _: line, path.read_text(), count=1)
+if n != 1:
+    sys.exit("set_key: no '%s:' line in %s" % (key, path))
+path.write_text(text)
 PY
 }
 
@@ -65,6 +78,14 @@ check_expect() {  # check_expect ok|fail <name> <dir> [check args...]
   out="$(cd "$dir" && ./ops/check-agent-kit.sh "$@" 2>&1)" || rc=$?
   if [ "$want" = ok ] && [ "$rc" -eq 0 ]; then ok "$name"
   elif [ "$want" = fail ] && [ "$rc" -ne 0 ] && grep -q '^FAIL:' <<<"$out"; then ok "$name"
+  else bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'; fi
+}
+
+check_fails_with() {  # check_fails_with <name> <dir> <text>: the check fails with <text> in a FAIL line
+  local name="$1" dir="$2" text="$3" out fails rc=0
+  out="$(cd "$dir" && ./ops/check-agent-kit.sh 2>&1)" || rc=$?
+  fails="$(grep '^FAIL:' <<<"$out" || true)"  # GAP lines quote change-file text and could match
+  if [ "$rc" -ne 0 ] && grep -qF -- "$text" <<<"$fails"; then ok "$name"
   else bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'; fi
 }
 
@@ -216,6 +237,77 @@ d="$(fresh_copy gap)"; change_file "$d" demo open tests/not_written_yet.sh; out=
 if grep -q 'GAP: .*not_written_yet.sh does not exist' <<<"$out"; then ok "GAP: an acceptance test not written yet"; else bad "GAP: missing test"; fi
 d="$(fresh_copy gapold)"; change_file "$d" demo open ops/test-kit.sh; out="$(cd "$d" && ./ops/check-agent-kit.sh 2>&1)"
 if grep -q 'GAP: .*ops/test-kit.sh is unchanged' <<<"$out"; then ok "GAP: an acceptance test unchanged since the base"; else bad "GAP: unchanged test"; fi
+
+echo "== skills =="
+template_skills() {  # template_skills <dir>: both kit skills, each linked, with SOURCE and LICENSE
+  local s
+  for s in kit-debug kit-explore; do
+    [ "$(readlink "$1/.claude/skills/$s")" = "../../.agents/skills/$s" ] || return 1
+    [ -s "$1/.agents/skills/$s/SOURCE" ] || return 1
+    [ -s "$1/.agents/skills/$s/LICENSE" ] || return 1
+  done
+}
+d="$(fresh_copy skills)"; check_expect ok "skills template passes" "$d"
+if template_skills "$d"; then ok "skills template ships both skills, linked, with SOURCE and LICENSE"
+else bad "skills template ships both skills, linked, with SOURCE and LICENSE"; fi
+d="$(fresh_copy sknest)"; mkdir -p "$d/.agents/skills/kit-debug/more"
+cp "$d/.agents/skills/kit-debug/SKILL.md" "$d/.agents/skills/kit-debug/more/SKILL.md"
+check_fails_with "skills check refuses a nested skill" "$d" "kit-debug/more/SKILL.md is not directly in a skill folder"
+d="$(fresh_copy skname)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" name Kit--Explore
+check_fails_with "skills check refuses a bad name" "$d" "breaks the Agent Skills pattern"
+d="$(fresh_copy sklong)"; long="$(printf 'a%.0s' $(seq 1 65))"; mkdir -p "$d/.agents/skills/$long"
+printf -- '---\nname: %s\ndescription: A name one character too long.\n---\n' "$long" > "$d/.agents/skills/$long/SKILL.md"
+ln -s "../../.agents/skills/$long" "$d/.claude/skills/$long"
+check_fails_with "skills check refuses a 65-character name" "$d" "breaks the Agent Skills pattern"
+d="$(fresh_copy skfolder)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" name kit-explorer
+check_fails_with "skills check refuses a name unlike its folder" "$d" "differs from its folder"
+d="$(fresh_copy sknodesc)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description
+check_fails_with "skills check refuses a bad description: none" "$d" "the description has 0 characters"
+d="$(fresh_copy skdesc)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description "$(printf 'a%.0s' $(seq 1 1025))"
+check_fails_with "skills check refuses a bad description: 1,025 characters" "$d" "the description has 1025 characters"
+d="$(fresh_copy skdesc24)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description "$(printf 'a%.0s' $(seq 1 1024))"
+check_expect ok "skills check allows a 1,024-character description" "$d"
+d="$(fresh_copy sknolink)"; rm "$d/.claude/skills/kit-explore"
+check_fails_with "skills check refuses a missing or dangling link: missing" "$d" ".claude/skills/kit-explore does not lead to .agents/skills/kit-explore"
+d="$(fresh_copy skdangle)"; ln -s ../../.agents/skills/kit-gone "$d/.claude/skills/kit-gone"
+check_fails_with "skills check refuses a missing or dangling link: dangling" "$d" ".claude/skills/kit-gone points nowhere"
+d="$(fresh_copy sklicense)"; rm "$d/.agents/skills/kit-debug/LICENSE"
+check_fails_with "skills check refuses an unvetted copy: no LICENSE" "$d" "is a copied skill without LICENSE"
+d="$(fresh_copy skpin)"; set_key "$d/.agents/skills/kit-debug/SOURCE" commit 8ca22db
+check_fails_with "skills check refuses an unvetted copy: no 40-hex commit" "$d" "the full 40-hex upstream commit"
+d="$(fresh_copy skexec)"; chmod +x "$d/.agents/skills/kit-debug/defense-in-depth.md"
+check_fails_with "skills check refuses an unvetted copy: an executable file" "$d" "defense-in-depth.md is executable"
+d="$(fresh_copy skhooks)"; edit "$d/.agents/skills/kit-debug/SKILL.md" $'name: kit-debug\n' $'name: kit-debug\nhooks:\n  Stop: echo stop\n'
+check_fails_with "skills check refuses an unvetted copy: a hooks key" "$d" "has the frontmatter key(s) hooks"
+d="$(fresh_copy skscript)"; mkdir -p "$d/.agents/skills/my-tool"
+printf -- '---\nname: my-tool\ndescription: Runs the project tool.\n---\nRun ./run.sh.\n' > "$d/.agents/skills/my-tool/SKILL.md"
+printf '#!/bin/sh\necho tool\n' > "$d/.agents/skills/my-tool/run.sh"; chmod +x "$d/.agents/skills/my-tool/run.sh"
+ln -s ../../.agents/skills/my-tool "$d/.claude/skills/my-tool"
+check_expect ok "skills check allows an adopter script" "$d"
+d="$(fresh_copy skquote)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description '"An open quote'
+check_fails_with "skills check refuses unreadable frontmatter: an open quote" "$d" "the frontmatter is unreadable"
+d="$(fresh_copy skfence)"; edit "$d/.agents/skills/kit-debug/SKILL.md" $'fixes\n---\n' $'fixes\n'
+check_fails_with "skills check refuses unreadable frontmatter: no closing line" "$d" "the frontmatter is unreadable"
+d="$(fresh_copy skurl)"; set_key "$d/.agents/skills/kit-debug/SOURCE" url
+check_fails_with "skills check refuses an unvetted copy: no url" "$d" "SOURCE needs 'url: https://"
+d="$(fresh_copy skspdx)"; set_key "$d/.agents/skills/kit-debug/SOURCE" license
+check_fails_with "skills check refuses an unvetted copy: no licence id" "$d" "SOURCE needs 'license:'"
+d="$(fresh_copy sktwice)"; edit "$d/.agents/skills/kit-explore/SKILL.md" $'name: kit-explore\n' $'name: kit-explore\nname: kit-explore\n'
+check_fails_with "skills check refuses unreadable frontmatter: a key twice" "$d" "'name' appears twice"
+d="$(fresh_copy sktab)"; edit "$d/.agents/skills/kit-explore/SKILL.md" $'name: kit-explore\n' $'name: kit-explore\nmetadata:\n\tauthor: someone\n'
+check_fails_with "skills check refuses unreadable frontmatter: a tab indent" "$d" "indented with a tab"
+d="$(fresh_copy skcolon)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description "Use when: planning"
+check_fails_with "skills check refuses unreadable frontmatter: ': ' in a plain value" "$d" "contains ': '"
+d="$(fresh_copy skstray)"; edit "$d/.agents/skills/kit-explore/SKILL.md" $'name: kit-explore\n' $'name: kit-explore\njust a sentence\n'
+check_fails_with "skills check refuses unreadable frontmatter: a line without a key" "$d" "is not 'key: value'"
+d="$(fresh_copy skflow)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description "[plan, design]"
+check_fails_with "skills check refuses a description it cannot read" "$d" "'description' is not a plain, quoted or block-scalar value"
+d="$(fresh_copy skblock)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description $'>-\n  A relentless interview: folded\n  over two lines.'
+check_expect ok "skills check reads a block-scalar description" "$d"
+d="$(fresh_copy skquoted)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description "'A quoted description: with a colon'"
+check_expect ok "skills check reads a quoted description" "$d"
+d="$(fresh_copy skrule3)"; mv "$d/.agents/skills/kit-debug" "$d/.agents/skills/kit-fix"
+check_fails_with "skills rule 3 path is checked" "$d" "AGENTS.md mentions .agents/skills/kit-debug/SKILL.md, which does not exist"
 
 echo "== changes.py archive =="
 d="$(fresh_copy aropen)"; change_file "$d" demo open ops/test-kit.sh; archive_expect fail "refuses an open change" "$d" demo "status: closed"
@@ -417,6 +509,24 @@ nothing_unshipped() {  # nothing_unshipped <dir>: install.sh copied none of the 
   done
 }
 
+kit_skills_match() {  # kit_skills_match <dir>: every file of the kit's kit- skills is in <dir>, equal
+  local f n=0
+  while IFS= read -r -d '' f; do
+    n=$((n + 1))
+    cmp -s "$kit/$f" "$1/$f" || { echo "     differs: $f"; return 1; }
+  done < <(git -C "$kit" ls-files -z --cached --others --exclude-standard -- '.agents/skills/kit-*')
+  [ "$n" -gt 0 ]
+}
+
+kit_links_match() {  # kit_links_match <dir>: each kit- skill has its relative link in .claude/skills
+  local s n=0
+  for s in "$kit"/.agents/skills/kit-*/; do
+    s="$(basename "$s")"; n=$((n + 1))
+    [ "$(readlink "$1/.claude/skills/$s")" = "../../.agents/skills/$s" ] || { echo "     no link: $s"; return 1; }
+  done
+  [ "$n" -gt 0 ]
+}
+
 adopter_files_kept() {
   git -C "$1" diff --quiet HEAD -- AGENTS.md CLAUDE.md ops/verify.sh docs/agent .github .gitignore
 }
@@ -504,6 +614,25 @@ p.write_text(t)
 PY
   commit_in "$d" "put our own rule first"; install_run "$d" --from v1.0.0
   known_failure "install AGENTS.md step fits an adopter with its own rules" own_rules_respected
+
+  d="$(v1_adopter skills)"; mkdir -p "$d/.agents/skills/my-skill" "$d/.claude/skills"
+  printf -- '---\nname: my-skill\ndescription: An adopter skill.\n---\nBody.\n' > "$d/.agents/skills/my-skill/SKILL.md"
+  ln -s ../../.agents/skills/my-skill "$d/.claude/skills/my-skill"
+  commit_in "$d" "add our own skill"; install_run "$d" --from v1.0.0
+  expect "install skills: every kit- skill folder equals the kit's" kit_skills_match "$d"
+  expect "install skills: every kit- skill gets its link" kit_links_match "$d"
+  expect "install skills: the adopter's own skill stays byte-unchanged" \
+    git -C "$d" diff --quiet HEAD -- .agents/skills/my-skill .claude/skills/my-skill
+  check_expect ok "install skills: the kit check passes" "$d"
+  commit_in "$d" "update the kit"; install_run "$d"
+  expect "install skills: a second run writes nothing" says "Nothing to write"
+
+  d="$(v1_adopter skilldir)"; mkdir -p "$d/.claude/skills/kit-debug"
+  echo "a Claude-only copy" > "$d/.claude/skills/kit-debug/SKILL.md"
+  commit_in "$d" "keep our own copy"; install_run "$d" --from v1.0.0
+  expect "install skills keep a real directory: left alone" \
+    git -C "$d" diff --quiet HEAD -- .claude/skills/kit-debug
+  expect "install skills keep a real directory: reported" says ".claude/skills/kit-debug is a real file or directory"
 else
   echo "skip install.sh cases: tag v1.0.0 is not in this clone (fetch tags to run them)"
 fi

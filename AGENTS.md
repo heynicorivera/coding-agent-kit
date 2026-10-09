@@ -21,8 +21,9 @@ the code. Max 7 rules.
    `./ops/verify.sh` before new work; a failure inherited from the last session comes first.
 3. Classify each change after reading the code. T0 (trivial, under ~20 lines): verify only.
    T1 (feature or bug fix): a change file from `docs/agent/changes/_template.md` before code; a fix
-   needs a test that failed before it. T2 (schema, auth, payments, cross-module): T1 plus Design and
-   Spec delta. Unsure: the higher tier. Done: close it, run `./ops/agent/changes.py` archive.
+   starts from the root cause (`.agents/skills/kit-debug/SKILL.md`) and needs a test that failed
+   before it. T2 (schema, auth, payments, cross-module): T1 plus Design and Spec delta. Unsure: the
+   higher tier. Done: close it, run `./ops/agent/changes.py` archive.
 4. When code changed, rewrite `docs/agent/STATUS.md` before presenting: what changed, `verification:`
    (verified | partial | failed) with the command and commit, what is next. Under 60 lines.
 5. Append chosen-between alternatives to `docs/agent/DECISIONS.md`; propose repeated lessons in
