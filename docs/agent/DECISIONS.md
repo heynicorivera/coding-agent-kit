@@ -215,3 +215,28 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   better; the maintainer still clicks nothing. Rejected: relaxing the hook (a global guardrail
   loosened for one kit, and direct pushes skip the range rules); the maintainer pushing records
   (a step per session).
+- 2026-10-09: Skill add-ons are planned and built before the OpenSpec-style flow, whose commands
+  then ship as `kit-` skills in the same folder. Replaces the order of 2026-10-08. Why: the
+  maintainer's call; the skills folder, its check and install.sh custody are built once.
+- 2026-10-09: Of five candidate skill sets, two skills are planned in
+  `docs/agent/changes/add-skills.md`: `kit-explore` (Pocock's grill-me and grilling merged into one
+  skill that runs only when the user types it) and `kit-debug` (Superpowers' systematic-debugging).
+  Why: licences, pins and files verified in `research/skills-addons-proposal.md`. Rejected: the
+  LSP plugins (they install without LSP configuration, claude-plugins-official #379; Claude Code
+  only; language servers to install); the ast-grep skills (no LICENSE file, a name that differs
+  from its folder, a binary); Ponytail (its author refuses a condensed version, and the sentence
+  measured in its issue #685 is already rule 3).
+- 2026-10-09: No "smallest complete change" clause in rule 3, and no A/B measurement before
+  building. Why: the maintainer's call; no one-line version has been measured, and 5-10 task pairs
+  cannot show the effects measured elsewhere (JetBrains needed 80 pairs for −10.3 % cost).
+- 2026-10-09: Kit skills are named `kit-` plus a step of the change flow (`kit-explore`; later
+  `kit-propose`, `kit-apply`, `kit-archive`), and `kit-debug`. Why: Claude Code lets a project
+  skill replace a built-in command of the same name, and `/plan`, `/design`, `/review`, `/verify`
+  and `/debug` are built-ins; the prefix also marks the folders install.sh owns. Rejected: bare
+  verbs, classic product-stage names, the upstream names.
+- 2026-10-09: A session-start briefing (Last session, Next, Needs you; 3-5 one-line bullets, each
+  with a path or URL, copied from STATUS.md) is planned as its own T2 change after the skills, in
+  `docs/agent/changes/session-briefing.md`. Until it ships, STATUS.md's header asks for the
+  briefing in the first reply of every session. Why: the maintainer's call. Rejected: a briefing
+  the model writes at session start (tokens every session; it can drift from the file); Claude
+  Code's `initialUserMessage` (only in `claude -p`).
