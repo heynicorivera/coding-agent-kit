@@ -240,3 +240,13 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   briefing in the first reply of every session. Why: the maintainer's call. Rejected: a briefing
   the model writes at session start (tokens every session; it can drift from the file); Claude
   Code's `initialUserMessage` (only in `claude -p`).
+- 2026-10-09: ROADMAP.md and the add-skills plan are reconciled in a records pull request before
+  the build. The roadmap lists the skills and the briefing ahead of the OpenSpec-style flow, says
+  the flow's commands ship as `kit-` skills, and leaves open what revises a proposal after review
+  (the 2026-10-08 flow had an update command; the naming decision lists none). The maintainer's
+  pickup test moves right after the skill links, before the check is written. Why: the
+  maintainer's call; the roadmap had not changed since 2026-10-08, so a session reading it would
+  take the wrong order and folder, and a failed pickup would change the layout the check is built
+  on. Rejected: one change for the skills and the whole flow (bigger, nothing ships until all of
+  it does, and it reverses the order decided earlier on 2026-10-09); fixing the records at wrap-up
+  (they stay wrong during the build).
