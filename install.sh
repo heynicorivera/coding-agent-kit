@@ -112,10 +112,11 @@ put() {  # put <source-file> <rel>: writes a kit file into the target; put_link 
 }
 
 put_link() {  # put_link <rel> <link-target>: a symlink; a real file or directory there is kept
-  local rel="$1" want="$2" dst="$target/$1"
+  local rel="$1" want="$2" dst="$target/$1" kept
   [ -L "$dst" ] && [ "$(readlink "$dst")" = "$want" ] && return 0
   if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    notes+=("$rel is a real file or directory, not a link to ${want#../../}; left alone. Move it away and rerun to use the kit's skill.")
+    kept="is a real file or directory, not a link to ${want#../../}; left alone."
+    notes+=("$rel $kept Move it away and rerun to use the kit's skill.")
     return 0
   fi
   written+=("$rel")

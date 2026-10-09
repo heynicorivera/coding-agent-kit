@@ -198,7 +198,7 @@ def frontmatter(path):  # the top-level keys of a SKILL.md frontmatter
     return fields
 
 
-def check_copy(base, fields):  # a folder with SOURCE holds third-party files: pinned, licensed, text
+def check_copy(base, fields):  # SOURCE marks third-party files: pinned, licensed, text only
     source = {}
     with open(os.path.join(base, "SOURCE"), encoding="utf-8", errors="replace") as handle:
         for line in handle:
@@ -207,8 +207,8 @@ def check_copy(base, fields):  # a folder with SOURCE holds third-party files: p
     if not source.get("url", "").startswith("https://"):
         fail("%s/SOURCE needs 'url: https://...' naming the upstream repository." % base)
     if not re.fullmatch(r"[0-9a-f]{40}", source.get("commit", "")):
-        fail("%s/SOURCE needs 'commit:' with the full 40-hex upstream commit, so the copy is pinned."
-             % base)
+        fail("%s/SOURCE needs 'commit:' with the full 40-hex upstream commit, so the copy is "
+             "pinned." % base)
     if not source.get("license"):
         fail("%s/SOURCE needs 'license:' with the upstream licence's SPDX id." % base)
     if not os.path.isfile(os.path.join(base, "LICENSE")):
@@ -218,7 +218,8 @@ def check_copy(base, fields):  # a folder with SOURCE holds third-party files: p
         dirs.sort()
         for path in sorted(os.path.join(folder, name) for name in files):
             if not os.path.islink(path) and os.stat(path).st_mode & 0o111:
-                fail("%s is executable; a copied skill is text only. Run: chmod -x %s" % (path, path))
+                fail("%s is executable; a copied skill is text only. Run: chmod -x %s"
+                     % (path, path))
     extra = sorted(set(fields) - COPY_KEYS)
     if extra:
         fail("%s/SKILL.md has the frontmatter key(s) %s; a copied skill may use only Agent Skills "
@@ -261,8 +262,8 @@ if os.path.isdir(ROOT):
         dirs.sort()
         depth = 0 if folder == ROOT else os.path.relpath(folder, ROOT).count(os.sep) + 1
         if "SKILL.md" in files and depth != 1:
-            fail("%s/SKILL.md is not directly in a skill folder; tools find only %s/<name>/SKILL.md."
-                 % (folder, ROOT))
+            fail("%s/SKILL.md is not directly in a skill folder; tools find only "
+                 "%s/<name>/SKILL.md." % (folder, ROOT))
     for folder in sorted(os.listdir(ROOT)):
         if os.path.isfile(os.path.join(ROOT, folder, "SKILL.md")):
             check_skill(folder)
@@ -270,7 +271,8 @@ if os.path.isdir(LINKS):
     for entry in sorted(os.listdir(LINKS)):
         link = os.path.join(LINKS, entry)
         if os.path.islink(link) and not os.path.exists(link):
-            fail("%s points nowhere (%s); delete it or restore its skill." % (link, os.readlink(link)))
+            fail("%s points nowhere (%s); delete it or restore its skill."
+                 % (link, os.readlink(link)))
 sys.exit(1 if failures else 0)
 PY
   return 0

@@ -81,10 +81,11 @@ check_expect() {  # check_expect ok|fail <name> <dir> [check args...]
   else bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'; fi
 }
 
-check_fails_with() {  # check_fails_with <name> <dir> <text>: the check fails and prints <text>
-  local name="$1" dir="$2" text="$3" out rc=0
+check_fails_with() {  # check_fails_with <name> <dir> <text>: the check fails with <text> in a FAIL line
+  local name="$1" dir="$2" text="$3" out fails rc=0
   out="$(cd "$dir" && ./ops/check-agent-kit.sh 2>&1)" || rc=$?
-  if [ "$rc" -ne 0 ] && grep -qF -- "$text" <<<"$out"; then ok "$name"
+  fails="$(grep '^FAIL:' <<<"$out" || true)"  # GAP lines quote change-file text and could match
+  if [ "$rc" -ne 0 ] && grep -qF -- "$text" <<<"$fails"; then ok "$name"
   else bad "$name (exit $rc)"; printf '%s\n' "$out" | sed 's/^/     /'; fi
 }
 
@@ -267,9 +268,9 @@ check_fails_with "skills check refuses a bad description: 1,025 characters" "$d"
 d="$(fresh_copy skdesc24)"; set_key "$d/.agents/skills/kit-explore/SKILL.md" description "$(printf 'a%.0s' $(seq 1 1024))"
 check_expect ok "skills check allows a 1,024-character description" "$d"
 d="$(fresh_copy sknolink)"; rm "$d/.claude/skills/kit-explore"
-check_fails_with "skills check refuses a missing link" "$d" ".claude/skills/kit-explore does not lead to .agents/skills/kit-explore"
+check_fails_with "skills check refuses a missing or dangling link: missing" "$d" ".claude/skills/kit-explore does not lead to .agents/skills/kit-explore"
 d="$(fresh_copy skdangle)"; ln -s ../../.agents/skills/kit-gone "$d/.claude/skills/kit-gone"
-check_fails_with "skills check refuses a dangling link" "$d" ".claude/skills/kit-gone points nowhere"
+check_fails_with "skills check refuses a missing or dangling link: dangling" "$d" ".claude/skills/kit-gone points nowhere"
 d="$(fresh_copy sklicense)"; rm "$d/.agents/skills/kit-debug/LICENSE"
 check_fails_with "skills check refuses an unvetted copy: no LICENSE" "$d" "is a copied skill without LICENSE"
 d="$(fresh_copy skpin)"; set_key "$d/.agents/skills/kit-debug/SOURCE" commit 8ca22db
