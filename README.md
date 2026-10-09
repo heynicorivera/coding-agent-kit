@@ -22,6 +22,10 @@ Zed read its AGENTS.md natively, and untested configs for five more tools ship i
 4. **Leaves memory more correct than it found it.** STATUS.md is rewritten with a verification
    status; DECISIONS.md is append-only (checked); LEARNINGS.md holds curated, evidenced lessons
    with a size cap. `ops/check-agent-kit.sh` enforces all of it locally and in CI.
+5. **Ships two vetted skills.** `/kit-explore` interviews you about a plan before anything is
+   written, and runs only when you type it. `/kit-debug` is a root-cause debugging method that
+   AGENTS.md rule 3 points at for fixes. Each is copied from upstream at a pinned commit with its
+   licence; the check polices every skill in `.agents/skills/`.
 
 Every rule is backed by a source: see `PRD.md` and `research/audit-2026-09-28.md`.
 
@@ -66,6 +70,14 @@ missed. Tested locally: Claude Code. `ops/test-kit.sh` checks the gate's output 
 tool and validates the `contrib/untested/` configs; the tools themselves are configured from their
 documentation (URLs in `PRD.md`) and not run.
 
+Skills live in `.agents/skills/`, which Zed's built-in agent, Codex, Copilot, Cursor and Gemini CLI
+read according to their documentation. Claude Code reads only `.claude/skills/`, where one relative
+link per skill points at the same files. Tested: Claude Code 2.1.286 in the terminal, and Claude
+Code as an agent in Zed 1.23.2, list both skills when the session starts in the repository. Not
+tested: Zed's built-in agent and the other tools. Per their documentation, Gemini CLI ignores
+`disable-model-invocation`, so there `kit-explore` can start when the model picks it, and VS Code
+lists each skill twice.
+
 ## Updating the kit in a repository
 Run it from an up-to-date kit checkout (git 2.31 or newer), against a clean adopter on a new
 branch, with no agent session open there:
@@ -80,6 +92,7 @@ The first update of a repository that was copied by hand needs `--from <tag>` (f
 | Files | On update |
 |---|---|
 | `ops/check-agent-kit.sh`, `ops/agent/*.py`, `ops/agent/*.sh`, `.githooks/pre-commit`, `docs/agent/ONBOARD.md`, the two `_template.md` files | overwritten: the kit owns them |
+| `.agents/skills/kit-*/` and their links in `.claude/skills/` | overwritten: the kit owns every `kit-` skill folder and its link; a missing link is created, a real directory in its place is reported and left alone. Skills without the `kit-` prefix are yours and never touched. A kit skill you deleted comes back, and a file the kit drops from a skill stays until you remove it |
 | `AGENTS.md`, `CLAUDE.md`, `ops/verify.sh`, `docs/agent/STATUS.md`, `DECISIONS.md`, `LEARNINGS.md` | never written: you own them |
 | `.claude/settings.json`, `.github/workflows/agent-kit.yml`, `.gitignore`, `ops/agent/non-code-paths.txt` | overwritten if you never changed them; otherwise the kit's copy lands beside yours as `<path>.kit-new` with a diff, and the kit check fails until you merge it and delete the sidecar |
 | `ops/test-kit.sh`, `install.sh`, `contrib/`, `PRD.md`, `research/` and the other kit documents | never copied |
@@ -118,6 +131,9 @@ Start agent sessions there only after that commit.
 | `ops/agent/` | Hook scripts (session start, stop gate, session end), `changes.py`, the non-code list |
 | `.githooks/pre-commit` | Runs `ops/verify.sh` before every commit, for every tool |
 | `.claude/settings.json` | Claude Code hooks and deny rules (Copilot CLI reads it too) |
+| `.agents/skills/kit-explore/` | `/kit-explore`: a planning interview that runs only when typed (Pocock's grill-me and grilling, MIT; `SOURCE` and `LICENSE` inside) |
+| `.agents/skills/kit-debug/` | `/kit-debug`: root-cause debugging method that rule 3 points at (Superpowers' systematic-debugging, MIT; `SOURCE` and `LICENSE` inside) |
+| `.claude/skills/` | One relative link per skill, so Claude Code reads the files in `.agents/skills/` |
 | `contrib/untested/` | Configs for Codex, Cursor, Copilot cloud agent, Gemini CLI, Aider; inactive until copied |
 | `.github/workflows/agent-kit.yml` | CI: verify on every push, range rules on pull requests |
 | `.github/workflows/kit-self-test.yml` | Kit only: runs `ops/test-kit.sh` |
@@ -142,6 +158,9 @@ Start agent sessions there only after that commit.
   failures. The hook checks the working tree, so unstaged edits count.
 - **"is closed; run ./ops/agent/changes.py archive".** A closed change must be archived so its Spec
   delta reaches the spec; run the command it prints.
+- **A skill does not show up.** A Claude Code session lists the skills of the folder it started in:
+  start it in the repository root, then `/skills` lists them. The kit check reports a missing or
+  dangling link in `.claude/skills/` and a `SKILL.md` that tools would skip.
 - **Known limits.** The gate's state in `~/.cache/agent-kit/` is writable by any process running as
   you, and the gate lets the turn end on an internal error. The pre-commit hook and CI are the
   backstops.

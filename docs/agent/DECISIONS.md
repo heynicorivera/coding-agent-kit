@@ -250,3 +250,25 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
   on. Rejected: one change for the skills and the whole flow (bigger, nothing ships until all of
   it does, and it reverses the order decided earlier on 2026-10-09); fixing the records at wrap-up
   (they stay wrong during the build).
+- 2026-10-09: Skills live in `.agents/skills/<name>/` with one relative link per skill in
+  `.claude/skills/`. A copied skill keeps the upstream bytes except edits recorded in `SOURCE`
+  (`url`, `path`, `commit`, `license`, one `changed` line each) and adds the upstream `LICENSE`.
+  Why: one set of files that Claude Code (through the links) and Zed, Codex, Copilot, Cursor and
+  Gemini CLI (the folder) read; MIT requires the notice in copies; an update is a new copy at a new
+  pin, reviewed as a diff. Rejected: copies in both folders (they drift, and some tools list both);
+  one link for the whole folder (undocumented, and it collides with an adopter's own
+  `.claude/skills/`); provenance in frontmatter `metadata` (it edits upstream bytes).
+- 2026-10-09: `check_skills` applies the copy rules (pin, licence, no executable file, only Agent
+  Skills frontmatter keys) to folders with `SOURCE` only; an adopter's own skill gets the layout,
+  name, description and link rules and may ship a script. Its frontmatter reader takes plain,
+  quoted and block-scalar values and fails anything else as unreadable. Why: copied third-party
+  text must not bring hooks, `allowed-tools` or scripts past the kit's hook and permission files;
+  Python's standard library has no YAML parser. Rejected: a YAML dependency; checking the kit's
+  own skills only.
+- 2026-10-09: `install.sh` owns every `.agents/skills/kit-*` folder and its link by prefix; a real
+  directory where a link belongs is reported, never replaced. Known limits: a kit skill an adopter
+  deleted returns on the next update, and a file dropped from a kit skill upstream stays. Rejected:
+  a list of the kit's skills in `install.sh` (one more thing to keep in step).
+- 2026-10-09: PRD §3: skills leave the non-goals, since the Agent Skills format is shared by the
+  daily tools; "making the agent correct" stays a non-goal, and `kit-debug` ships with no effect
+  claim. Why: the shared format the non-goal waited for exists; no measurement was run.

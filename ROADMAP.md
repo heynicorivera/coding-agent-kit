@@ -10,14 +10,8 @@ and fails it once the fix lands, which is the signal to make it a normal case an
 Findings are triaged before each adopter update.
 
 ## Next
-- **Two skills, `kit-explore` and `kit-debug`, before the change flow.** Both are copied from
-  upstream at a pinned commit with their licence, live in `.agents/skills/` with links in
-  `.claude/skills/`, and come with a check and install.sh custody of every `kit-` folder, which
-  the flow's commands then reuse. Planned in `docs/agent/changes/add-skills.md` (T2); waits for
-  the maintainer's "approved".
-- **A session-start briefing, after the skills.** Last session, Next and Needs you, copied from
-  STATUS.md and shown before the maintainer types anything. Planned in
-  `docs/agent/changes/session-briefing.md` (T2).
+- **A session-start briefing.** Last session, Next and Needs you, copied from STATUS.md and shown
+  before the maintainer types anything. Planned in `docs/agent/changes/session-briefing.md` (T2).
 - **An OpenSpec-style change flow, before the rollout continues.** Each step of a change becomes a
   command an agent runs, on the change file and archive the kit already has. The commands ship as
   `kit-` skills in the skills folder (DECISIONS.md, 2026-10-09): its check and install.sh custody
