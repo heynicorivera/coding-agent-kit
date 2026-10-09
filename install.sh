@@ -3,8 +3,10 @@
 #   ./install.sh [--dry-run] [--from <kit tag or commit>] <target-repo>
 # Kit-owned files are overwritten. Adopter-owned files are never written. A shared file is
 # overwritten only if the adopter never patched it; otherwise the kit's copy lands next to it as
-# <path>.kit-new for a human to merge. The kit version is stamped into ops/agent/KIT_VERSION, which
-# is the default --from of the next run. The run ends with the steps left to a human.
+# <path>.kit-new for a human to merge. Every .agents/skills/kit-*/ folder is kit-owned too, with a
+# link in .claude/skills/ unless a real directory stands there. The kit version is stamped into
+# ops/agent/KIT_VERSION, which is the default --from of the next run. The run ends with the steps
+# left to a human.
 set -euo pipefail
 
 KIT_OWNED=(
@@ -19,6 +21,8 @@ ADOPTER_OWNED=(
   docs/agent/LEARNINGS.md
 )
 STAMP=ops/agent/KIT_VERSION
+SKILLS=.agents/skills  # kit-owned by pattern: every kit-* folder here, and its link in LINKS
+LINKS=.claude/skills
 
 kit="$(cd "$(dirname "$0")" && pwd)"
 dry_run=0
@@ -97,7 +101,7 @@ same_file() {  # same_file <a> <b>: same content and same executable bit
   if [ -x "$1" ]; then [ -x "$2" ]; else [ ! -x "$2" ]; fi
 }
 
-put() {  # put <source-file> <rel>: the only function that writes into the target
+put() {  # put <source-file> <rel>: writes a kit file into the target; put_link writes the links
   local src="$1" rel="$2" dst="$target/$2" mode=644
   [ -e "$dst" ] && same_file "$src" "$dst" && return 0
   written+=("$rel")
@@ -107,9 +111,34 @@ put() {  # put <source-file> <rel>: the only function that writes into the targe
   install -m "$mode" "$src" "$dst"
 }
 
+put_link() {  # put_link <rel> <link-target>: a symlink; a real file or directory there is kept
+  local rel="$1" want="$2" dst="$target/$1"
+  [ -L "$dst" ] && [ "$(readlink "$dst")" = "$want" ] && return 0
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    notes+=("$rel is a real file or directory, not a link to ${want#../../}; left alone. Move it away and rerun to use the kit's skill.")
+    return 0
+  fi
+  written+=("$rel")
+  [ "$dry_run" -eq 0 ] || return 0
+  mkdir -p "$(dirname "$dst")"
+  ln -sfn "$want" "$dst"
+}
+
 sync_owned() {
   local rel
   for rel in "${KIT_OWNED[@]}"; do put "$kit/$rel" "$rel"; done
+}
+
+sync_skills() {  # every kit- skill folder is kit-owned, each with a relative link for Claude Code
+  local rel name names=()
+  while IFS= read -r -d '' rel; do
+    [ -f "$kit/$rel" ] || continue
+    put "$kit/$rel" "$rel"
+    name="${rel#"$SKILLS"/}"
+    name="${name%%/*}"
+    case " ${names[*]-} " in *" $name "*) ;; *) names+=("$name") ;; esac
+  done < <(git -C "$kit" ls-files -z --cached --others --exclude-standard -- "$SKILLS/kit-*")
+  for name in ${names[@]+"${names[@]}"}; do put_link "$LINKS/$name" "../../$SKILLS/$name"; done
 }
 
 old_copy() {  # old_copy <rel> <file>: the kit's file at --from; fails when unknown
@@ -217,6 +246,7 @@ main() {
   check_target
   resolve_from
   sync_owned
+  sync_skills
   sync_shared
   write_stamp
   report_files
