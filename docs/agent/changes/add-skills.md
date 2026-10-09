@@ -36,17 +36,17 @@ T2 · cross-module: a new shipped folder, a check in a gate file, install.sh cus
 - [ ] `kit-debug` edits, recorded in SOURCE: the name and four references (proposal, section 4.1)
 - [ ] `kit-explore`: grill-me's frontmatter and `agents/openai.yaml` with grilling's body, from mattpocock/skills at b0618bc; LICENSE, SOURCE
 - [ ] Relative links in `.claude/skills/`, one per skill
+- [ ] Maintainer: pickup test in Claude Code (`/skills`) and Zed (trusted worktree), before the check is written
 - [ ] `check_skills` in `ops/check-agent-kit.sh` (proposal, section 4.2)
 - [ ] `install.sh`: owns every `kit-` skill folder and its link; a real directory reported
 - [ ] `ops/test-kit.sh`: the skills and install cases above; break each rule once
 - [ ] AGENTS.md rule 3 points at `.agents/skills/kit-debug/SKILL.md`
-- [ ] PRD §3 non-goals and R20; README tables; CHANGELOG; DECISIONS; STATUS
-- [ ] Maintainer: pickup test in Claude Code (`/skills`) and Zed (trusted worktree); README
+- [ ] PRD §3 non-goals and R20; README tables and the pickup results; CHANGELOG; DECISIONS; STATUS
 
 ## Out of scope
 - The LSP plugins, the ast-grep skills and Ponytail (proposal, section 2)
 - A "smallest complete change" clause and the Phase 2 measurement (maintainer, 2026-10-09)
-- The OpenSpec-style commands; they come next, as `kit-propose`, `kit-apply` and `kit-archive`
+- The OpenSpec-style flow's other commands: `kit-propose`, `kit-apply`, `kit-archive` and the one that revises a proposal, still open (`ROADMAP.md`); they come next
 - A briefing shown at session start; it is a change of its own
 - Removing a kit skill from adopters, or letting an adopter opt out of one
 - Windows, where git symlinks need extra setup; the kit does not support Windows yet
@@ -96,7 +96,9 @@ T2 · cross-module: a new shipped folder, a check in a gate file, install.sh cus
   `check_stale_references` keeps it current.
 - Risks: VS Code lists each skill twice, and Cursor does not document duplicates. Gemini CLI
   ignores `disable-model-invocation` and has no skill commands, so there `kit-explore` starts only
-  when the model picks it. Claude Code's pickup through a link is documented, not yet tested here.
+  when the model picks it. Claude Code's pickup through a link is documented, not yet tested here,
+  so the pickup test comes right after the links: if it fails, the layout changes before the check
+  and install.sh are built on it.
 - Sequencing: before the OpenSpec-style flow (maintainer, 2026-10-09; replaces the order decided on
   2026-10-08). The flow's commands then ship as `kit-` skills in this folder with
   `disable-model-invocation`, which answers its open question about a prompt form for other tools.
