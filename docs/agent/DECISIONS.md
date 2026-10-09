@@ -272,3 +272,12 @@ Format: `- YYYY-MM-DD: <decision>. Why: <reason>. Rejected: <alternatives, optio
 - 2026-10-09: PRD §3: skills leave the non-goals, since the Agent Skills format is shared by the
   daily tools; "making the agent correct" stays a non-goal, and `kit-debug` ships with no effect
   claim. Why: the shared format the non-goal waited for exists; no measurement was run.
+- 2026-10-09: The briefing change is reworked, not built as written: a spike comes first (a minimal
+  hook `systemMessage` tried in terminal Claude Code and in a Zed Claude thread), then the
+  maintainer settles the open questions listed in `docs/agent/changes/session-briefing.md` (display
+  in Zed, the `fork` source, which sources show it, what counts as a path). Why: the maintainer's
+  call after a review of the plan against the Claude Code hooks documentation and the adapter Zed
+  runs. The documentation does not say a SessionStart `systemMessage` is displayed, the adapter can
+  drop `info`-level messages, and the planned "the user has seen it" line would then leave no
+  briefing at all. Rejected: building it as written; running the spike the same day (the
+  maintainer chose to wrap up first).
